@@ -49,9 +49,10 @@ void init_telemetry() {
     DL_UART.c_lflag = 0;  //local modes
     tcsetattr(fd, TCSANOW, &DL_UART);
     DOWLINK_PORT = fd;
+
 }
 
-void send_telemetry(struct imu imuData, struct gps gpsData, struct photons photonData) {
+void send_telemetry(struct imu *imuData, struct gps *gpsData, struct photons *photonData) {
 
     int bytes = 0;
     static char sendpacket[TELE_PACKET_SIZE];
@@ -123,6 +124,9 @@ void send_telemetry(struct imu imuData, struct gps gpsData, struct photons photo
         bytes += write(DOWNLINK_PORT, &sendpacket[bytes], 1);
     }
 
-    free(string_to_write);
+    // COPY TILDES INTO THE STRING
+    for(bytes=0; bytes < length(string_to_write); bytes++) {
+        string_to_write[bytes] = '~';
+    }
 
 }

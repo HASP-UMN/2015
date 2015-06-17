@@ -4,7 +4,6 @@
 #include "globaldefs.h"
 
 void init_telemetry();
-void send_telemetry(struct sensordata *sensorData);
-
+void send_telemetry(struct imu *imuData, struct gps *gpsData, struct photons *photonData);
 
 #endif
