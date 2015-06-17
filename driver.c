@@ -9,6 +9,9 @@
 #include <linux/version.h>
 #include <linux/devfs_fs_kernel.h>
 #include <asm/uaccess.h>
+#include <linux/wait.h>
+
+#include "globaldefs.h"
 
 /* Check  if the Device File System (experimental) is installed */
 #ifndef CONFIG_DEVFS_FS
@@ -21,21 +24,48 @@ MODULE_AUTHOR("Aron Lindell");
 MODULE_DESCRIPTION("HASP_FIFO Driver");
 MODULE_LICENSE("GPL");
 
+
+
+
+
+
+
+
+#define IRQ_NUM 6
+
 static devfs_handle_t fifo_handle;    /* handle for the device     */
 static char* dev_name = "FIFO_DEV";  /* create /dev/FIFO_DEV entry */
-int irq_num = 6;
-static unsigned char fifo_buffer[BUFMAX];
+static unsigned char fifo_buffer[BUFMAX]; //BUFMAX is in globaldefs.h.. should be 500
+unsigned short port_start = 0x800;
+static int open_count = 0;
 
+
+
+//function declarations
 int fifo_open(const char*);
 static ssize_t fifo_read(struct file*, char*, size_t, loff_t *);
-static ssize_t fifo_write(struct file*, const char*, size_t, loff_t*);
+int fifo_close();
 
 static struct file_operations fifo_fops = {
     open : fifo_open,
     read : fifo_read,
-    write: fifo_write,
+    close: fifo_close,
     /* NULL (default) */
 };
+
+
+
+
+wait_queue_head_t wq;
+
+
+
+
+
+
+
+
+
 
 
 /* Module Initialization */
@@ -60,19 +90,30 @@ static int __init fifo_init(void)
         printk(KERN_ALERT "Error registering FIFO_DEV module\n");
     }
     
+    init_waitqueue_head(&wq);
+    
     return(0);
 } /* fifo_init() */
 
 
 
 
-/* Module deconstructor */
-static void __exit fifo_exit(void)
+
+
+
+static int fifo_open(const char*)
 {
-    devfs_unregister(fifo_handle);
-    free_irq(irq_num, NULL);
+    if ( (request_irq(IRQ_NUM, handler, SA_INTERRUPT, dev_name, NULL) ) != 0 ){
+        printk(KERN_ALERT "Could not request IRQ\n");
+        reuturn -1;
+    }
     
-} /* fifo_exit() */
+    open_count++;
+    
+    return 0;
+}
+
+
 
 
 
@@ -85,6 +126,9 @@ static ssize_t fifo_read(struct file* filp, char* buf, size_t count, loff_t* off
     {
         count = BUFMAX;  /* trim data */
     }
+    
+    interruptible_sleep_on(&wq);
+    
     copy_to_user(buf, fifo_buffer, count);
     return(count);
 } /* fifo_read() */
@@ -92,26 +136,51 @@ static ssize_t fifo_read(struct file* filp, char* buf, size_t count, loff_t* off
 
 
 
-/* Write to device */
-static ssize_t fifo_write(struct file *filp, const char *buf, size_t count, loff_t *offp)
+
+
+
+
+
+
+int handler(int irq, void* dev_id, struct pt_regs *regs)
 {
-    if (count > BUFMAX)
+    int i;
+    for (i = 0; i < BUFMAX; i++) {
+        fifo_buffer[i] = inb(port_start + i);
+    }
+    
+    // or can you insb as below
+    //insb(port_start, fifo_buffer, BUFMAX);
+    
+    wake_up_interruptible(&wq);
+}
+
+
+
+
+
+
+
+static int fifo_close()
+{
+    open_count --;
+    
+    if (open_count == 0)
     {
-        count = BUFMAX;
+        fifo_exit();
     }
-    copy_from_user(fifo_buffer, buf, count);
-    return(count);
+    
+    return 0;
 }
 
-
-
-
-static int fifo_open(const char*)
+/* Module deconstructor */
+static void __exit fifo_exit(void)
 {
-    if ( (request_irq(irq_num, handler, SA_INTERRUPT, dev_name, NULL) ) != 0 ){
-        printk(KERN_ALERT "Could not request IRQ\n");
-    }
-}
+    devfs_unregister(fifo_handle);
+    free_irq(IRQ_NUM, NULL);
+    
+} /* fifo_exit() */
+
 
 
 

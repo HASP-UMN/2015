@@ -25,6 +25,7 @@
 #include "updateEventCounter.c"
 #include "downlink.c"
 #include "HASP_SPI_devices.c"
+#include "VN100.h"
 
 //Data structures
 struct sensordata sensorData;
@@ -76,7 +77,7 @@ state checkState(state SMSTATE)
             }
             */
             int fd = init_vn100();
-            read_VN100(fd, buf);
+            read_VN100(fd, imu_data);
             imuStamp = get_timestamp_ms();
             SMSTATE = IDLE;
             break;
@@ -189,7 +190,10 @@ int main()
     close_imu();
     
     // need to prob send a kill() to child process and then wait();
+    int child_status;
     kill(childpid, SIGTERM);
+    fprintf(stderr, "Sent SIGTERM signal to child process %i : Now waiting for it\n", childpid);
+    waitpid(childpid, &child_status, WNOHANG);
     
     return 0;
 }
