@@ -29,11 +29,11 @@ struct gps
 {
     // RECEIVER CHARACTERISTICS
     int port;                       // GPS receiver serial communication port
-    char responseBuffer[BUFFMAX];   // Character buffer for response data
     int readCalls;                  // Number of times read_gps has been called
     int badDataCounter;             // Number of bad read from read_gps (rests after 5)
     int posValFlag;                 // Flag signifying valid XYZ position from receiver
     unsigned long lastPosVal;       // Last position valid
+    char responseBuffer[512];       // Character buffer for response data
     
     // GPS TIME (TELEMETRY PACKET BYTES 1-2)
     uint8_t timeStatus;             // Time status
