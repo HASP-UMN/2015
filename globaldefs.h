@@ -68,32 +68,24 @@ struct photons
 struct gps
 {
     
-    uint16_t weekRef;			///< GPS week reference number
-    long time;	                  	///< [sec], timestamp of GPS data
+    uint8_t timeStatus;			// Time status
+    uint16_t weekRef;			// GPS week reference number
+    long time;				// GPS timestamp [s]
+
+    double Xe;				// X position (ECEF) [m]
+    double Ye;				// Y position (ECEF) [m]
+    double Ze;				// Z position (ECEF) [m]
+    float  Px;  			// X std dev [m]
+    float  Py;  			// Y std dev [m]
+    float  Pz;  			// Z std dev [m]
     
-    //enum PosVelType posType;			///< Position Type
-    uint8_t timeStatus;					///< Time status
-    double Xe;					///< [m], X position, ECEF
-    double Ye;					///< [m], Y position, ECEF
-    double Ze;					///< [m], Z position, ECEF
-    
-    float  Px;  					///< [m], X std dev
-    float  Py;  					///< [m], Y std dev
-    float  Pz;  					///< [m], Z std dev
-    
-    int port;
-    char responseBuffer[144];
-    int readCalls;                  //number of times read_gps has been called
-    int badDataCounter;             //number of bad read from read_gps (rests after 5)
+    int port;				// GPS receiver serial communication port
+    char responseBuffer[144];		// Character buffer for response data
+    int readCalls;                  	// Number of times read_gps has been called
+    int badDataCounter;             	// Number of bad read from read_gps (rests after 5)
     int posValFlag;
     unsigned long lastPosVal;
-};
 
-struct sensordata
-{
-    struct imu *imuData_ptr;                ///< pointer to imu data structure
-    struct photons *photonData_ptr;		///< pointer to xray data structure
-    struct gps *gpsData_ptr;                ///< pointer to gps data structure
 };
 
 #endif
