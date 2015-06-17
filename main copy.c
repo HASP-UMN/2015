@@ -1,36 +1,25 @@
-//
-//  main.c
-//  hasp
-//
-//  Created by Aron Lindell on 6/8/15.
-//  Copyright (c) 2015 Aron Lindell. All rights reserved.
-//
+#include <stdio.h>       // IO functions
+#include <stdlib.h>      // Standard C library
+#include <errno.h>       // Error enumerations
+#include <termios.h>     // Serial port I/O
+#include <string.h>      // Character array operations
+#include <math.h>        // Mathematical operations
+#include <time.h>        // Time/date functions (e.g. time since UNIX epoch)
+#include <fcntl.h>       // File descriptor control
+#include <unistd.h>      // Symbolic constants and types
+#include <sys/types.h>   // C data types
+//                       //
+//    HAXDT-SPECIFIC     //
+//     HEADER FILES:     //
+#include "globaldefs.h"  // Globally-defined variables (ports, buffer sizes, enumerated types/structs, etc.)
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <time.h>
-#include <termios.h>
-#include <fcntl.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <string.h>
-#include <math.h>
 
-#include "globaldefs.h"
-#include "datalogger.c"
-#include "timing.c"
-#include "updateEventCounter.c"
-#include "downlink.c"
-#include "HASP_SPI_devices.c"
+struct imu imuData;        // 'imu' struct for VN100 data
+struct gps gpsData;        // 'gps' struct for OEMstar data
+struct photons photonData; // 'photons' struct for digital data from the A/D converter
 
-//Data structures
-struct sensordata sensorData;
-struct imu imuData;
-struct gps gpsData;
-struct photons photonData;
 
-//Timestamps stored as longs
+// Timestamps stored as longs
 unsigned long t, t_0, log_period;
 unsigned long imuStamp,gpsStamp,telStamp,eventStamp;
 
@@ -46,7 +35,7 @@ state checkState(state SMSTATE)
     
     switch (SMSTATE) {
         case IDLE:
-            if ( (time - imuStamp) >= 30){
+            if ( (time - imuStamp) >= 5){
                 SMSTATE = RD_IMU;
             }
             else if ( (time - gpsStamp) >= 1000){
@@ -107,31 +96,29 @@ state checkState(state SMSTATE)
 
 int main(int argc, const char * argv[])
 {
-    t_0 = get_timestamp_ms();
+    //t_0 = get_timestamp(); // from pre-processing/timing board
     
-    //populate sensorData struct
-    sensorData.gpsData_ptr = &gpsData;
-    sensorData.imuData_ptr = &imuData;
-    sensorData.photonData_ptr = &photonData;
-    
-    //init devices
+    // Initialize GPS receiver
     init_GPS(&gpsData);
-    init_IMU(&imuData);
+
+    // Initialize IMU
+    init_vn100(&imuData);
+
+    // Initialize telemtry stream
     init_telemetry();
     
     state SMSTATE = IDLE;
+    photonData.ch01 = 0.00;
+    photonData.ch02 = 0.00;
+    photonData.ch03 = 0.00;
+    photonData.ch04 = 0.00;
     
-    sensorData.photonData_ptr->countsA = 0;
-    sensorData.photonData_ptr->countsB = 0;
-    sensorData.photonData_ptr->countsC = 0;
-    sensorData.photonData_ptr->countsD = 0;
-    
-        usleep(500000); //not sure what this is for
+    usleep(500000);
     
     while (1)
     {
         t = get_timestamp_ms() - t_0;
-        log_period = t/360000000000; //not sure what this is for
+        log_period = t/360000000000;
         SMSTATE = checkState(SMSTATE);
     }
     

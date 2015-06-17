@@ -58,10 +58,10 @@ struct imu
 struct photons
 {
     //unsigned long time;
-    int countsA;
-    int countsB;
-    int countsC;
-    int countsD;
+    int ch01;
+    int ch02;
+    int ch03;
+    int ch04;
     //int spi_handle;
 };
 
