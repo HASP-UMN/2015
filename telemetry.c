@@ -95,22 +95,22 @@ void send_telemetry(struct imu *imuData, struct gps *gpsData, struct photons *ph
     reset_string(string_to_write);
     
     // CH. 3 PHOTON EVENTS (BYTES 55-63)
-    sprintf(string_to_write,"%d,",sensorData->photonData_ptr->countsC);
+    sprintf(string_to_write,"%d,",photonData.ch03);
     memcpy(&sendpacket[54],string_to_write,9);
     reset_string(string_to_write);
 
     // CH. 4 PHOTON EVENTS (BYTES 64-72)
-    sprintf(string_to_write,"%d,",sensorData->photonData_ptr->countsD);
+    sprintf(string_to_write,"%d,",photonData.ch04);
     memcpy(&sendpacket[63],string_to_write,9);
     reset_string(string_to_write);
 
     // AMBIENT PAYLOAD TEMPERATURE (BYTES 73-78)
-    sprintf(string_to_write,"%.0f,",sensorData->imuData_ptr->temp_raw*0.14+25);
+    sprintf(string_to_write,"%.0f,",imuData.Temp);
     memcpy(&sendpacket[72],string_to_write,5);
     reset_string(string_to_write);
     
     // ERROR WORD (BYTES 79-81)
-    sprintf(string_to_write,"%.1f",sensorData->imuData_ptr->supply_raw*0.002418);
+    sprintf(string_to_write,"%d",ERROR_WORD);
     memcpy(&sendpacket[78],string_to_write,5);
     reset_string(string_to_write);
     

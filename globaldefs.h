@@ -24,30 +24,12 @@
 #include <stdlib.h>
 
 
-// DATA TYPES
-typedef unsigned char   byte;           //  typedef of byte
-typedef unsigned short  word;           //  typedef of word
-
-
-// PHOTON DATA BUFFER (FROM FIFO) FOR IRQ HANDLER
-extern const unsigned long  LENGTH = 500;
-extern unsigned char        PHOTON_DATA_BUFFER[LENGTH];
-extern int                  BYTES_PER_PHOTON = 10;
-extern int                  PHOTONS_AQUIRED = 0;
-
-
-// ISA BUS INPUT PORT
-const unsigned short INPUT_PORT = 0x800; // base address
-int SYNC_BYTE = 77; //arbitrarily chosen for now
-int IRQ = 6;
-
-
 // STRUCTURE FOR OEMSTAR DATA (BESTXYZB)
 struct gps
 {
     // RECEIVER CHARACTERISTICS
     int port;                       // GPS receiver serial communication port
-    char responseBuffer[BUFFMAX];	// Character buffer for response data
+    char responseBuffer[BUFFMAX];   // Character buffer for response data
     int readCalls;                  // Number of times read_gps has been called
     int badDataCounter;             // Number of bad read from read_gps (rests after 5)
     int posValFlag;                 // Flag signifying valid XYZ position from receiver
@@ -72,6 +54,7 @@ struct gps
 };
 
 
+
 // STRUCTURE FOR PHOTON DATA (FROM CMOS AYNCHRONOUS FIFO, VIA THE ISA BUS)
 struct photons
 {
@@ -87,6 +70,17 @@ struct photons
     // CHANNEL 4 PHOTON EVENTS (TELEMETRY PACKET BYTES 64-72)
     int counts_ch04;    // number of gamma photons stopped by detector 4
 };
+
+// DATA BUFFER FOR IRQ HANDLER
+extern const unsigned long  LENGTH = 500;
+extern unsigned char        PHOTON_DATA_BUFFER[LENGTH];
+extern int                  BYTES_PER_PHOTON = 10;
+extern int                  PHOTONS_AQUIRED = 0;
+
+// ISA BUS INPUT PORT
+const unsigned short INPUT_PORT = 0x800; // base address
+int SYNC_BYTE = 77; //arbitrarily chosen for now
+int IRQ = 6;
 
 
 // STRUCTURE FOR VN100 DATA (REGISTER ID: 54)
@@ -112,5 +106,10 @@ struct imu
     // ambient temperature measurement comes here in the response packet
     float Pressure; // [kPa]
 };
+
+
+// ERROR WORD (TELEMETRY PACKET BYTES 79-81)
+unsigned short ERROR_WORD;
+
 
 #endif
