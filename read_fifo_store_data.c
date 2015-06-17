@@ -6,6 +6,7 @@
 int read_fifo_store_data(int fifo_fd, int storage_fd, unsigned char* buf, size_t length)
 {
     fprintf(stderr, "Child process %i has entered read_fifo_store_data\n", getpid() );
+    
     while(1){
         
         int bytes_read;
