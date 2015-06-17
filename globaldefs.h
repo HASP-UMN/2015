@@ -10,6 +10,7 @@
 #define PI                      3.14159265358979                ///< pi */
 #define PI2                     6.28318530717958                ///< pi*2 */
 #define half_pi                 1.57079632679490                ///< pi/2 */
+#define BUFMAX 500
 
 #ifndef TRUE
 #define TRUE 1
@@ -31,6 +32,12 @@ extern const unsigned long LENGTH = 500;
 extern unsigned char	PHOTON_DATA_BUFFER[LENGTH];
 extern int BYTES_PER_PHOTON = 10;
 extern int PHOTONS_AQUIRED = 0;
+
+//PORT ADDRESS ON THE ISA BUS
+const unsigned short INPUT_PORT = 0x800;
+int SYNC_BYTE = 77; //arbitrarily chosen for now
+int IRQ = 6;
+
 
 struct imu
 {
@@ -58,34 +65,42 @@ struct imu
 struct photons
 {
     //unsigned long time;
-    int ch01;
-    int ch02;
-    int ch03;
-    int ch04;
+    int channel01;
+    int channel02;
+    int channel03;
+    int channel04;
     //int spi_handle;
 };
 
 struct gps
 {
     
-    uint8_t timeStatus;			// Time status
-    uint16_t weekRef;			// GPS week reference number
-    long time;				// GPS timestamp [s]
-
-    double Xe;				// X position (ECEF) [m]
-    double Ye;				// Y position (ECEF) [m]
-    double Ze;				// Z position (ECEF) [m]
-    float  Px;  			// X std dev [m]
-    float  Py;  			// Y std dev [m]
-    float  Pz;  			// Z std dev [m]
+    uint16_t weekRef;			///< GPS week reference number
+    long time;	                  	///< [sec], timestamp of GPS data
     
-    int port;				// GPS receiver serial communication port
-    char responseBuffer[144];		// Character buffer for response data
-    int readCalls;                  	// Number of times read_gps has been called
-    int badDataCounter;             	// Number of bad read from read_gps (rests after 5)
+    //enum PosVelType posType;			///< Position Type
+    uint8_t timeStatus;					///< Time status
+    double Xe;					///< [m], X position, ECEF
+    double Ye;					///< [m], Y position, ECEF
+    double Ze;					///< [m], Z position, ECEF
+    
+    float  Px;  					///< [m], X std dev
+    float  Py;  					///< [m], Y std dev
+    float  Pz;  					///< [m], Z std dev
+    
+    int port;
+    char responseBuffer[144];
+    int readCalls;                  //number of times read_gps has been called
+    int badDataCounter;             //number of bad read from read_gps (rests after 5)
     int posValFlag;
     unsigned long lastPosVal;
+};
 
+struct sensordata
+{
+    struct imu *imuData_ptr;                ///< pointer to imu data structure
+    struct photons *photonData_ptr;		///< pointer to xray data structure
+    struct gps *gpsData_ptr;                ///< pointer to gps data structure
 };
 
 #endif
