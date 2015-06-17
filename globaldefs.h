@@ -70,21 +70,21 @@ struct gps
     
     uint8_t timeStatus;			// Time status
     uint16_t weekRef;			// GPS week reference number
-    long time;				// GPS timestamp [s]
+    long time;				    // GPS timestamp [s]
 
-    double Xe;				// X position (ECEF) [m]
-    double Ye;				// Y position (ECEF) [m]
-    double Ze;				// Z position (ECEF) [m]
-    float  Px;  			// X std dev [m]
-    float  Py;  			// Y std dev [m]
-    float  Pz;  			// Z std dev [m]
+    double Xe;                  // X position (ECEF) [m]
+    double Ye;                  // Y position (ECEF) [m]
+    double Ze;                  // Z position (ECEF) [m]
+    float  Px;                  // X std dev [m]
+    float  Py;                  // Y std dev [m]
+    float  Pz;                  // Z std dev [m]
     
-    int port;				// GPS receiver serial communication port
-    char responseBuffer[144];		// Character buffer for response data
-    int readCalls;                  	// Number of times read_gps has been called
-    int badDataCounter;             	// Number of bad read from read_gps (rests after 5)
-    int posValFlag;
-    unsigned long lastPosVal;
+    int port;                   // GPS receiver serial communication port
+    char responseBuffer[144];	// Character buffer for response data
+    int readCalls;              // Number of times read_gps has been called
+    int badDataCounter;         // Number of bad read from read_gps (rests after 5)
+    int posValFlag;             // Flag signifying valid XYZ position from receiver
+    unsigned long lastPosVal;   // Last position valid
 
 };
 
