@@ -10,6 +10,7 @@
 #define PI                      3.14159265358979                ///< pi */
 #define PI2                     6.28318530717958                ///< pi*2 */
 #define half_pi                 1.57079632679490                ///< pi/2 */
+#define BUFMAX 500
 
 #ifndef TRUE
 #define TRUE 1
@@ -31,6 +32,12 @@ extern const unsigned long LENGTH = 500;
 extern unsigned char	PHOTON_DATA_BUFFER[LENGTH];
 extern int BYTES_PER_PHOTON = 10;
 extern int PHOTONS_AQUIRED = 0;
+
+//PORT ADDRESS ON THE ISA BUS
+const unsigned short INPUT_PORT = 0x800;
+int SYNC_BYTE = 77; //arbitrarily chosen for now
+int IRQ = 6;
+
 
 struct imu
 {
@@ -58,10 +65,10 @@ struct imu
 struct photons
 {
     //unsigned long time;
-    int ch01;
-    int ch02;
-    int ch03;
-    int ch04;
+    int channel01;
+    int channel02;
+    int channel03;
+    int channel04;
     //int spi_handle;
 };
 
@@ -85,7 +92,7 @@ struct gps
     int badDataCounter;         // Number of bad read from read_gps (rests after 5)
     int posValFlag;             // Flag signifying valid XYZ position from receiver
     unsigned long lastPosVal;   // Last position valid
-
+    
 };
 
 #endif
