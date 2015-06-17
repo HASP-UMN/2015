@@ -125,7 +125,6 @@ state checkState(state SMSTATE)
     
 }
 
-//int main(int argc, const char * argv[])
 int main()
 {
     t_0 = get_timestamp_ms();
