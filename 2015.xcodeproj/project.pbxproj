@@ -8,17 +8,15 @@
 
 /* Begin PBXBuildFile section */
 		8DC17C951B3202E900435906 /* driver.c in Sources */ = {isa = PBXBuildFile; fileRef = 8DC17C811B3202E900435906 /* driver.c */; };
-		8DC17C961B3202E900435906 /* gps_novatel copy.c in Sources */ = {isa = PBXBuildFile; fileRef = 8DC17C831B3202E900435906 /* gps_novatel copy.c */; };
-		8DC17C971B3202E900435906 /* HASP_SPI_devices copy.c in Sources */ = {isa = PBXBuildFile; fileRef = 8DC17C851B3202E900435906 /* HASP_SPI_devices copy.c */; };
 		8DC17C991B3202E900435906 /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = 8DC17C881B3202E900435906 /* main.c */; };
 		8DC17C9A1B3202E900435906 /* read_fifo_store_data.c in Sources */ = {isa = PBXBuildFile; fileRef = 8DC17C891B3202E900435906 /* read_fifo_store_data.c */; };
 		8DC17C9B1B3202E900435906 /* README.md in Sources */ = {isa = PBXBuildFile; fileRef = 8DC17C8A1B3202E900435906 /* README.md */; };
-		8DC17C9C1B3202E900435906 /* spi copy.c in Sources */ = {isa = PBXBuildFile; fileRef = 8DC17C8B1B3202E900435906 /* spi copy.c */; };
-		8DC17C9D1B3202E900435906 /* state machine example.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 8DC17C8D1B3202E900435906 /* state machine example.cpp */; };
 		8DC17C9E1B3202E900435906 /* telemetry.c in Sources */ = {isa = PBXBuildFile; fileRef = 8DC17C8E1B3202E900435906 /* telemetry.c */; };
-		8DC17C9F1B3202E900435906 /* timing copy.c in Sources */ = {isa = PBXBuildFile; fileRef = 8DC17C901B3202E900435906 /* timing copy.c */; };
+		8DC17C9F1B3202E900435906 /* timing.c in Sources */ = {isa = PBXBuildFile; fileRef = 8DC17C901B3202E900435906 /* timing.c */; };
 		8DC17CA01B3202E900435906 /* updateEventCounter copy.c in Sources */ = {isa = PBXBuildFile; fileRef = 8DC17C911B3202E900435906 /* updateEventCounter copy.c */; };
 		8DC17CA21B3202E900435906 /* write_photon_data.c in Sources */ = {isa = PBXBuildFile; fileRef = 8DC17C931B3202E900435906 /* write_photon_data.c */; };
+		8DC17CA51B321AC600435906 /* makefile in Sources */ = {isa = PBXBuildFile; fileRef = 8DC17CA41B321AC600435906 /* makefile */; };
+		8DC17CA81B321BDF00435906 /* VN100.c in Sources */ = {isa = PBXBuildFile; fileRef = 8DC17CA61B321BDF00435906 /* VN100.c */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -38,21 +36,17 @@
 		8DC17C7F1B3202E900435906 /* datalogger copy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "datalogger copy.h"; sourceTree = SOURCE_ROOT; };
 		8DC17C811B3202E900435906 /* driver.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = driver.c; sourceTree = SOURCE_ROOT; };
 		8DC17C821B3202E900435906 /* globaldefs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = globaldefs.h; sourceTree = SOURCE_ROOT; };
-		8DC17C831B3202E900435906 /* gps_novatel copy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "gps_novatel copy.c"; sourceTree = SOURCE_ROOT; };
-		8DC17C841B3202E900435906 /* gps_novatel copy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "gps_novatel copy.h"; sourceTree = SOURCE_ROOT; };
-		8DC17C851B3202E900435906 /* HASP_SPI_devices copy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "HASP_SPI_devices copy.c"; sourceTree = SOURCE_ROOT; };
-		8DC17C861B3202E900435906 /* HASP_SPI_devices copy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "HASP_SPI_devices copy.h"; sourceTree = SOURCE_ROOT; };
 		8DC17C881B3202E900435906 /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = SOURCE_ROOT; };
 		8DC17C891B3202E900435906 /* read_fifo_store_data.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = read_fifo_store_data.c; sourceTree = SOURCE_ROOT; };
 		8DC17C8A1B3202E900435906 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = SOURCE_ROOT; };
-		8DC17C8B1B3202E900435906 /* spi copy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "spi copy.c"; sourceTree = SOURCE_ROOT; };
-		8DC17C8C1B3202E900435906 /* spi copy.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "spi copy.h"; sourceTree = SOURCE_ROOT; };
-		8DC17C8D1B3202E900435906 /* state machine example.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = "state machine example.cpp"; sourceTree = SOURCE_ROOT; };
 		8DC17C8E1B3202E900435906 /* telemetry.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = telemetry.c; sourceTree = SOURCE_ROOT; };
 		8DC17C8F1B3202E900435906 /* telemetry.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = telemetry.h; sourceTree = SOURCE_ROOT; };
-		8DC17C901B3202E900435906 /* timing copy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "timing copy.c"; sourceTree = SOURCE_ROOT; };
+		8DC17C901B3202E900435906 /* timing.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = timing.c; sourceTree = SOURCE_ROOT; };
 		8DC17C911B3202E900435906 /* updateEventCounter copy.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = "updateEventCounter copy.c"; sourceTree = SOURCE_ROOT; };
 		8DC17C931B3202E900435906 /* write_photon_data.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = write_photon_data.c; sourceTree = SOURCE_ROOT; };
+		8DC17CA41B321AC600435906 /* makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = makefile; sourceTree = "<group>"; };
+		8DC17CA61B321BDF00435906 /* VN100.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = VN100.c; sourceTree = SOURCE_ROOT; };
+		8DC17CA71B321BDF00435906 /* VN100.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = VN100.h; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -86,23 +80,19 @@
 			isa = PBXGroup;
 			children = (
 				8DC17C8A1B3202E900435906 /* README.md */,
+				8DC17CA61B321BDF00435906 /* VN100.c */,
+				8DC17CA71B321BDF00435906 /* VN100.h */,
 				8DC17C881B3202E900435906 /* main.c */,
 				8DC17C821B3202E900435906 /* globaldefs.h */,
 				8DC17C891B3202E900435906 /* read_fifo_store_data.c */,
 				8DC17C811B3202E900435906 /* driver.c */,
 				8DC17C7F1B3202E900435906 /* datalogger copy.h */,
-				8DC17C831B3202E900435906 /* gps_novatel copy.c */,
-				8DC17C841B3202E900435906 /* gps_novatel copy.h */,
-				8DC17C851B3202E900435906 /* HASP_SPI_devices copy.c */,
-				8DC17C861B3202E900435906 /* HASP_SPI_devices copy.h */,
-				8DC17C8B1B3202E900435906 /* spi copy.c */,
-				8DC17C8C1B3202E900435906 /* spi copy.h */,
-				8DC17C8D1B3202E900435906 /* state machine example.cpp */,
 				8DC17C8E1B3202E900435906 /* telemetry.c */,
 				8DC17C8F1B3202E900435906 /* telemetry.h */,
-				8DC17C901B3202E900435906 /* timing copy.c */,
+				8DC17C901B3202E900435906 /* timing.c */,
 				8DC17C911B3202E900435906 /* updateEventCounter copy.c */,
 				8DC17C931B3202E900435906 /* write_photon_data.c */,
+				8DC17CA41B321AC600435906 /* makefile */,
 			);
 			path = 2015;
 			sourceTree = "<group>";
@@ -163,14 +153,12 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8DC17C971B3202E900435906 /* HASP_SPI_devices copy.c in Sources */,
 				8DC17C991B3202E900435906 /* main.c in Sources */,
-				8DC17C961B3202E900435906 /* gps_novatel copy.c in Sources */,
 				8DC17C9A1B3202E900435906 /* read_fifo_store_data.c in Sources */,
-				8DC17C9F1B3202E900435906 /* timing copy.c in Sources */,
+				8DC17C9F1B3202E900435906 /* timing.c in Sources */,
+				8DC17CA51B321AC600435906 /* makefile in Sources */,
 				8DC17C9E1B3202E900435906 /* telemetry.c in Sources */,
-				8DC17C9C1B3202E900435906 /* spi copy.c in Sources */,
-				8DC17C9D1B3202E900435906 /* state machine example.cpp in Sources */,
+				8DC17CA81B321BDF00435906 /* VN100.c in Sources */,
 				8DC17CA21B3202E900435906 /* write_photon_data.c in Sources */,
 				8DC17C9B1B3202E900435906 /* README.md in Sources */,
 				8DC17CA01B3202E900435906 /* updateEventCounter copy.c in Sources */,
