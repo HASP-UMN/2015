@@ -1,15 +1,11 @@
 // VN100.h
 // This file facilitates interaction between the Tomcat
 // and the VN100 IMU.
-// Last Edited By: Luke Granlund
-// Last Edited On: 18 June 2015, 16:00
+// Edited By: Luke Granlund
+// Edited On: 18 June 2015, 16:00
 
 #ifndef VN100_H_
 #define VN100_H_
-
-#include "globaldefs.h"
-
-
 #define IMU_PORT "/dev/ttyUSB0"             // TTY PORT TO VN100 (SET UP BY ftdi_sio KERNEL DRIVER)
 #define IMU_DATAFILE "IMU_VN100.txt"        // Path to file where VN100 IMU date will be recorded
 

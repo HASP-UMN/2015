@@ -1,10 +1,11 @@
-//
+//  ***** HASP UNIVERISTY OF MINNESOTA 2015 *****
 //  main.c
 //  hasp
 //
 //  Created by Aron Lindell on 6/8/15.
 //  Copyright (c) 2015 Aron Lindell. All rights reserved.
-//
+//  Edited 6/19/2015 - Charlie Denis
+
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,11 +22,10 @@
 #include <sys/wait.h>
 
 #include "globaldefs.h"
-//#include "datalogger.c"
-//#include "timing.c" // also in make file
+//#include "timing.c" // linked in make file
 //#include "timing.h"
 //#include "downlink.c"
-//#include "VN100.c" // also in make file
+//#include "VN100.c" // linked in make file
 
 //Data structures
 struct imu imuData;
@@ -35,9 +35,29 @@ struct photons photonData;
 //char imu_data[imu_stream_length];
 
 //Timestamps stored as longs
-unsigned long t, t_0, log_period;
+unsigned long t, t_0;
 unsigned long imuStamp,gpsStamp,telStamp,eventStamp;
 int imu_fd;
+
+
+
+
+
+// Definition moved here from globaldefs.h for error checking 6/19/2015 10am -Charlie
+//extern const unsigned long  LENGTH = 500;
+extern unsigned char        PHOTON_DATA_BUFFER[500];
+extern int                  BYTES_PER_PHOTON = 10;
+extern int                  PHOTONS_AQUIRED = 0;
+// ISA BUS INPUT PORT
+const unsigned short INPUT_PORT = 0x800; // base address
+int SYNC_BYTE = 77; //arbitrarily chosen for now
+int IRQ = 6;
+// END OF COPIED DATA from globaldefs.h
+
+
+
+
+
 
 //state machine state
 typedef enum state{
@@ -96,7 +116,7 @@ state checkState(state SMSTATE)
         case DOWNLINK:
 
             fprintf(stderr, "state = DOWNLINK\n");
-//            send_telemetry(&sensorData);
+	    //send_telemetry(&sensorData);
             telStamp = get_timestamp_ms();
 
             SMSTATE = IDLE;
@@ -126,7 +146,6 @@ int main()
 {
 	imu_fd = init_vn100();
 	t_0 = get_timestamp_ms();
-
         t = get_timestamp_ms() - t_0;
 	eventStamp = t_0;
 	gpsStamp = t_0;
@@ -157,16 +176,16 @@ int main()
     // next fork a child to call read on the fifo device in while(1)
 
     pid_t childpid;
-    childpid = fork();
-	int count = 0;
-    if (childpid == 0 )
-    {
-        //child code
-	while(1){
-        //	fprintf(stderr, "Child process: %i would enter read_fifo_store_data.c\n", childpid);
-       		read_fifo_store_data(fifo_fd, storage_fd, fifo_data_buf, BUFMAX);
-	}
-    }
+//    childpid = fork();
+//	int count = 0;
+//    if (childpid == 0 )
+//    {
+//        //child code
+//	while(1){
+//        //	fprintf(stderr, "Child process: %i would enter read_fifo_store_data.c\n", childpid);
+//       		read_fifo_store_data(fifo_fd, storage_fd, fifo_data_buf, BUFMAX);
+//	}
+//    }
     //init devices
     //init_GPS(&gpsData);
     //init_IMU(&imuData);

@@ -1,3 +1,4 @@
+// ***** HASP UNIVERISTY OF MINNESOTA 2015 *****
 // VN100.c
 // This file facilitates interaction between the Tomcat
 // and the VN100 IMU.
@@ -16,6 +17,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <string.h>
+
 #include "globaldefs.h"
 #include "serial.h"
 #include "VN100.h"
@@ -29,7 +31,7 @@ int init_vn100(){
 
 	if (fd < 0){
 		return -1;
-    }
+		}//endif
 
 	// Sets up serial settings
 	set_interface_attribs(fd, B115200, 0);
@@ -48,7 +50,7 @@ unsigned char calculateChecksum(char* command, size_t length){
     unsigned char xor = 0;
     for (idx = 1; idx < length-5; idx++){
         xor ^= (unsigned char)command[idx];
-    }
+    	}//end for loop
     return xor;
 }// end calculateChecksum
 
@@ -77,7 +79,7 @@ int read_vn100(int fd, struct imu* imuData_ptr){
 	// Deterimes how many bytes to read back from the IMU. Exits on error.
 	if (ioctl(fd, FIONREAD, &bytesToRead) < 0){
         return 0;
-	}
+	}//endif
 
 	fprintf(stderr,"bytesToRead: %d\n",bytesToRead);//for error checking
 
@@ -85,12 +87,12 @@ int read_vn100(int fd, struct imu* imuData_ptr){
     // a different number of bytes in the response, it is invalid.
 	if (bytesToRead != 115 && bytesToRead != 131){
         return 0;
-    }
+    	}//endif
 
     // Reads data from the IMU.
 	if (read(fd, &imuData_ptr->dataBuffer[0], bytesToRead) < 0){
         return 0;
-	}
+	}//endif
 
     // If 131 bytes are returned from the IMU, then two responses were sent back, a small 16 byte response
     // at the beginning caused by the init_vn100() function and the normal 115 byte response. This loops takes
@@ -99,7 +101,7 @@ int read_vn100(int fd, struct imu* imuData_ptr){
 		bytesToRead = 115;
 		for(idx = 0; idx < bytesToRead; idx++){
 			imuData_ptr->dataBuffer[idx] = imuData_ptr->dataBuffer[idx + 16];
-        }
+        }//endif
     }
 
     // Checksum
@@ -108,7 +110,7 @@ int read_vn100(int fd, struct imu* imuData_ptr){
 	// Compares the calculated checksum to received checksum
 	if (Checksum != strtol(bufCheck, NULL, 16)){
 		return 0;
-    }
+    	}//endif
 
     // Writes the data to the IMU structure
     imuData_ptr->MagX = (float)atof(substring(imuData_ptr->dataBuffer, 10, 17));
@@ -128,7 +130,8 @@ int read_vn100(int fd, struct imu* imuData_ptr){
     for (idx = 0; idx < (bytesToRead - 1); idx++){
         //fprintf(stderr, "%c", imuData_ptr->dataBuffer[idx]);
         fprintf(VN100File, "%c", imuData_ptr->dataBuffer[idx]);
-    }
+    	}//end forloop
+
 	fflush(VN100File);
 	fclose(VN100File);
 
