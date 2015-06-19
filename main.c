@@ -23,40 +23,34 @@
 
 #include "globaldefs.h"
 //#include "timing.c" // linked in make file
-//#include "timing.h"
+#include "timing.h"
 //#include "downlink.c"
 //#include "VN100.c" // linked in make file
 
 //Data structures
+
 struct imu imuData;
 struct gps gpsData;
 struct photons photonData;
-//#define imu_stream_length 132
-//char imu_data[imu_stream_length];
+
+#define imu_stream_length 131
+char imu_data[imu_stream_length];
 
 //Timestamps stored as longs
 unsigned long t, t_0;
 unsigned long imuStamp,gpsStamp,telStamp,eventStamp;
 int imu_fd;
 
+// buffer for reading from photon data fifo 
+#define 	     PHOTON_BUF_MAX 500
+unsigned char        PHOTON_DATA_BUFFER[PHOTON_BUF_MAX];
+#define              BYTES_PER_PHOTON 10
+int                  PHOTONS_AQUIRED = 0;
 
-
-
-
-// Definition moved here from globaldefs.h for error checking 6/19/2015 10am -Charlie
-//extern const unsigned long  LENGTH = 500;
-extern unsigned char        PHOTON_DATA_BUFFER[500];
-extern int                  BYTES_PER_PHOTON = 10;
-extern int                  PHOTONS_AQUIRED = 0;
 // ISA BUS INPUT PORT
 const unsigned short INPUT_PORT = 0x800; // base address
-int SYNC_BYTE = 77; //arbitrarily chosen for now
-int IRQ = 6;
-// END OF COPIED DATA from globaldefs.h
-
-
-
-
+#define SYNC_BYTE 77 //arbitrarily chosen for now
+#define IRQ_NUM 6
 
 
 //state machine state
@@ -165,27 +159,24 @@ int main()
     // should open fifo_driver here. That will register the irq6 line
     int fifo_fd, storage_fd;
     char * storage_file_string = "fifo_data.txt";
+    fifo_fd = 0;
     // fifo_fd = open("/dev/fifo_dev", O_RDONLY); //doesn't work yet
-	fifo_fd = 0;
-    fprintf(stderr, "Would open fifo_dev here\n");
-
+        fprintf(stderr, "Would open fifo_dev here\n");
     storage_fd = open(storage_file_string, O_RDWR);
-    unsigned char fifo_data_buf[BUFMAX];
-    bzero(fifo_data_buf, BUFMAX);
 
     // next fork a child to call read on the fifo device in while(1)
 
     pid_t childpid;
-//    childpid = fork();
-//	int count = 0;
-//    if (childpid == 0 )
-//    {
-//        //child code
-//	while(1){
-//        //	fprintf(stderr, "Child process: %i would enter read_fifo_store_data.c\n", childpid);
-//       		read_fifo_store_data(fifo_fd, storage_fd, fifo_data_buf, BUFMAX);
-//	}
-//    }
+    childpid = fork();
+	int count = 0;
+    if (childpid == 0 )
+    {
+        //child code
+	while(1){
+        //	fprintf(stderr, "Child process: %i would enter read_fifo_store_data.c\n", childpid);
+//       		read_fifo_store_data(fifo_fd, storage_fd, PHOTON_DATA_BUF, BUFMAX);
+	}
+    }
     //init devices
     //init_GPS(&gpsData);
     //init_IMU(&imuData);

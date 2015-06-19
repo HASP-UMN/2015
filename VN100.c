@@ -22,6 +22,7 @@
 #include "serial.h"
 #include "VN100.h"
 
+struct imu* imuData_ptr;
 
 // Initializes the file descriptor to read and write to the VN100 IMU.
 int init_vn100(){

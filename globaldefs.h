@@ -71,21 +71,7 @@ struct photons
     int counts_ch04;    // number of gamma photons stopped by detector 4
 };
 
-// DATA BUFFER FOR IRQ HANDLER
-// defined in MAIN for error checking purposes 6/19/2015 10am -Charlie
-/*
-//extern const unsigned long  LENGTH = 500;
-extern unsigned char        PHOTON_DATA_BUFFER[500];
-extern int                  BYTES_PER_PHOTON = 10;
-extern int                  PHOTONS_AQUIRED = 0;
-
-// ISA BUS INPUT PORT
-const unsigned short INPUT_PORT = 0x800; // base address
-int SYNC_BYTE = 77; //arbitrarily chosen for now
-int IRQ = 6;
-*/
-
-// STRUCTURE FOR VN100 DATA (REGISTER ID: 54)
+//STRUCTURE FOR VN100 DATA (REGISTER ID: 54)
 struct imu
 {
     // SERIAL I/O RESPONSE
