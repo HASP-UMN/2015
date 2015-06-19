@@ -17,7 +17,7 @@
 int init_vn100();
 unsigned char calculateChecksum(char*, size_t);
 char *substring(char*, int, int)
-int read_vn100(int, char*);
+int read_vn100(int, struct imu*);
 
 // VN100 Commands: Baud Rates //
 unsigned char vn100_B9600[] = "$VNWRG,5,9600*60\n";
@@ -25,9 +25,6 @@ unsigned char vn100_B115200[] = "$VNWRG,5,115200*60\n";
 unsigned char vn100_B230400[] = "$VNWRG,5,230400*6A\n";
 unsigned char vn100_B460800[] = "$VNWRG,5,460800*65\n";
 unsigned char vn100_B921600[] = "$VNWRG,5,921600*63\n";
-
-<<<<<<< HEAD
-<<<<<<< HEAD
 
 // VN100 Commands: Async Commands //
 unsigned char vn100_async_none[] = "$VNWRG,6,0*5C\n";

@@ -31,8 +31,8 @@
 struct imu imuData;
 struct gps gpsData;
 struct photons photonData;
-#define imu_stream_length 132
-char imu_data[imu_stream_length];
+//#define imu_stream_length 132
+//char imu_data[imu_stream_length];
 
 //Timestamps stored as longs
 unsigned long t, t_0, log_period;
@@ -75,7 +75,7 @@ state checkState(state SMSTATE)
                 IMUlogger(&imuData, log_period);
             }
             */
-            read_vn100(imu_fd, imu_data);
+            read_vn100(imu_fd, &imuData);
             imuStamp = get_timestamp_ms();
             SMSTATE = IDLE;
             break;
@@ -190,7 +190,7 @@ int main()
 //    close_imu();
 
     // need to prob send a kill() to child process and then wait();
-/* 
+/*
    int child_status;
     kill(childpid, SIGTERM);
     fprintf(stderr, "Sent SIGTERM signal to child process %i : Now waiting for it\n", childpid);
