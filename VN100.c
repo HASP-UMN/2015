@@ -55,9 +55,9 @@ unsigned char calculateChecksum(char* command, size_t length){
 
 // Gets a substring of a character array.
 char *substring(char* fullString, int start, int end) {
-    static char shortString[];
-    memcpy(shortString, &fullString[start], start - end + 1);
-    shortString[end + 1] = '\0';
+    static char shortString[11];
+    memcpy(shortString, &fullString[start], end - start + 1);
+    shortString[end - start + 1] = '\0';
     return (char *)shortString;
 }// end substring
 
@@ -121,7 +121,7 @@ int read_vn100(int fd, struct imu* imuData_ptr){
     imuData_ptr->GyroY = (float)atof(substring(imuData_ptr->dataBuffer, 72, 81));
     imuData_ptr->GyroZ = (float)atof(substring(imuData_ptr->dataBuffer, 83, 92));
     imuData_ptr->Temp = (float)atof(substring(imuData_ptr->dataBuffer, 94, 98));
-    imuData_ptr->Pressure =  = (float)atof(substring(imuData_ptr->dataBuffer, 100, 109));
+    imuData_ptr->Pressure = (float)atof(substring(imuData_ptr->dataBuffer, 100, 109));
 
     // Write IMU VN100 data to a file
 	FILE *VN100File = fopen(IMU_DATAFILE,"a");

@@ -16,7 +16,7 @@
 // Functions
 int init_vn100();
 unsigned char calculateChecksum(char*, size_t);
-char *substring(char*, int, int)
+char *substring(char*, int, int);
 int read_vn100(int, struct imu*);
 
 // VN100 Commands: Baud Rates //
