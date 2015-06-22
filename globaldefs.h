@@ -34,20 +34,20 @@ struct gps
     int posValFlag;                 // Flag signifying valid XYZ position from receiver
     unsigned long lastPosVal;       // Last position valid
     char responseBuffer[512];       // Character buffer for response data
-    
+
     // GPS TIME (TELEMETRY PACKET BYTES 1-2)
     uint8_t timeStatus;             // Time status
     uint16_t weekRef;               // GPS week reference number
     long time;                      // GPS timestamp [s]
- 
+
     // GPS ECEF X (TELEMETRY PACKET BYTES 3-9)
     double Xe;                      // X position (ECEF) [m]
     float  P_Xe;                    // X std dev [m]
-    
+
     // GPS ECEF Y (TELEMETRY PACKET BYTES 10-18)
     double Ye;                      // Y position (ECEF) [m]
     float  P_Ye;                    // Y std dev [m]
-    
+
     // GPS ECEF Z (TELEMETRY PACKET BYTES 19-27)
     double Ze;                      // Z position (ECEF) [m]
     float  P_Ze;                    // Z std dev [m]
@@ -60,39 +60,27 @@ struct photons
 {
     // CHANNEL 1 PHOTON EVENTS (TELEMETRY PACKET BYTES 37-45)
     int counts_ch01;    // number of gamma photons stopped by detector 1
-    
+
     // CHANNEL 2 PHOTON EVENTS (TELEMETRY PACKET BYTES 46-54)
     int counts_ch02;    // number of gamma photons stopped by detector 2
-    
+
     // CHANNEL 3 PHOTON EVENTS (TELEMETRY PACKET BYTES 55-63)
     int counts_ch03;    // number of gamma photons stopped by detector 3
-    
+
     // CHANNEL 4 PHOTON EVENTS (TELEMETRY PACKET BYTES 64-72)
     int counts_ch04;    // number of gamma photons stopped by detector 4
 };
 
-// DATA BUFFER FOR IRQ HANDLER
-extern const unsigned long  LENGTH = 500;
-extern unsigned char        PHOTON_DATA_BUFFER[LENGTH];
-extern int                  BYTES_PER_PHOTON = 10;
-extern int                  PHOTONS_AQUIRED = 0;
-
-// ISA BUS INPUT PORT
-const unsigned short INPUT_PORT = 0x800; // base address
-int SYNC_BYTE = 77; //arbitrarily chosen for now
-int IRQ = 6;
-
-
-// STRUCTURE FOR VN100 DATA (REGISTER ID: 54)
+//STRUCTURE FOR VN100 DATA (REGISTER ID: 54)
 struct imu
 {
     // SERIAL I/O RESPONSE
     int port;
     char dataBuffer[131];
-    
+
     // AMBIENT PAYLOAD TEMPERATURE (TELEMETRY PACKET BYTES 73-78)
     float Temp;     // [C]
-    
+
     // OTHER CALIBRATED SENSOR MEASUREMENTS
     float MagX;     // [gauss]
     float MagY;     // [gauss]
