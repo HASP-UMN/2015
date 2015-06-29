@@ -1,9 +1,8 @@
-/*
- * serial.c
- *
- *  Created on: Apr 3, 2015 at 3:16:34 PM
- *      Author: John
- */
+// ***** HASP UNIVERISTY OF MINNESOTA 2015 *****
+// serial.c
+// This file facilitates communication with the VN100 IMU
+// Created on: Apr 3, 2015 at 3:16:34 PM   Author: John
+// Edited 6/18/2015 Charles Denis
 
 #include <errno.h>
 #include <termios.h>

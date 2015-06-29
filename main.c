@@ -3,10 +3,9 @@
 //  hasp
 //
 //  Created by Aron Lindell on 6/8/15.
-//  Copyright (c) 2015 Aron Lindell. All rights reserved.
 //  Edited 6/19/2015 - Charlie Denis
 
-
+// Include files
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -22,17 +21,15 @@
 #include <sys/wait.h>
 
 #include "globaldefs.h"
-//#include "timing.c" // linked in make file
-#include "timing.h"
-//#include "downlink.c"
-//#include "VN100.c" // linked in make file
+#include "read_fifo_store_data.h"
+//#include "timing.h"
+#include "VN100.h"
 
 //Data structures
-
 struct imu imuData;
 struct gps gpsData;
 struct photons photonData;
-
+FILE* VN100File;
 #define imu_stream_length 131
 char imu_data[imu_stream_length];
 
@@ -42,7 +39,7 @@ unsigned long imuStamp,gpsStamp,telStamp,eventStamp;
 int imu_fd;
 
 // buffer for reading from photon data fifo 
-#define 	     PHOTON_BUF_MAX 500
+#define 		     PHOTON_BUF_MAX 500
 unsigned char        PHOTON_DATA_BUFFER[PHOTON_BUF_MAX];
 #define              BYTES_PER_PHOTON 10
 int                  PHOTONS_AQUIRED = 0;
@@ -51,7 +48,6 @@ int                  PHOTONS_AQUIRED = 0;
 const unsigned short INPUT_PORT = 0x800; // base address
 #define SYNC_BYTE 77 //arbitrarily chosen for now
 #define IRQ_NUM 6
-
 
 //state machine state
 typedef enum state{
@@ -89,7 +85,7 @@ state checkState(state SMSTATE)
                 IMUlogger(&imuData, log_period);
             }
             */
-            read_vn100(imu_fd, &imuData);
+            read_vn100(imu_fd, &imuData, VN100File);
             imuStamp = get_timestamp_ms();
             SMSTATE = IDLE;
             break;
@@ -121,7 +117,7 @@ state checkState(state SMSTATE)
             /*
             updateEventCounter(&photonData);
             */
-	    eventStamp = get_timestamp_ms();
+		    eventStamp = get_timestamp_ms();
 
             SMSTATE = IDLE;
             break;
@@ -139,72 +135,56 @@ state checkState(state SMSTATE)
 int main()
 {
 	imu_fd = init_vn100();
+	VN100File = fopen(IMU_DATAFILE,"a");
+// add init for gps and telemetry here
 	t_0 = get_timestamp_ms();
-        t = get_timestamp_ms() - t_0;
+//    t = get_timestamp_ms() - t_0; // pointless
 	eventStamp = t_0;
 	gpsStamp = t_0;
 	imuStamp = t_0;
 	telStamp = t_0;
-
-    /*
-    fprintf(stderr,"SETTING PERMISSION TO ACCESS PORT AT 0x%x - 0x%lx",INPUT_PORT,INPUT_PORT+LENGTH);
-
-    if(ioperm(INPUT_PORT,LENGTH+1,1)) {
-        perror("ERROR");
-        fprintf(stderr,"UNABLE TO SET PERMISSION TO ACCESS 0x%x - 0x%lx",INPUT_PORT,INPUT_PORT+LENGTH);
-        return -1;
-    }
-     */
-
-    // should open fifo_driver here. That will register the irq6 line
-    int fifo_fd, storage_fd;
-    char * storage_file_string = "fifo_data.txt";
-    fifo_fd = 0;
-    // fifo_fd = open("/dev/fifo_dev", O_RDONLY); //doesn't work yet
-        fprintf(stderr, "Would open fifo_dev here\n");
-    storage_fd = open(storage_file_string, O_RDWR);
-
-    // next fork a child to call read on the fifo device in while(1)
-
-    pid_t childpid;
-    childpid = fork();
-	int count = 0;
-    if (childpid == 0 )
-    {
-        //child code
-	while(1){
-        //	fprintf(stderr, "Child process: %i would enter read_fifo_store_data.c\n", childpid);
-//       		read_fifo_store_data(fifo_fd, storage_fd, PHOTON_DATA_BUF, BUFMAX);
-	}
-    }
-    //init devices
-    //init_GPS(&gpsData);
-    //init_IMU(&imuData);
-    //init_telemetry();
-
-    state SMSTATE = IDLE;
 
     photonData.counts_ch01 = 0;
     photonData.counts_ch02 = 0;
     photonData.counts_ch03 = 0;
     photonData.counts_ch04 = 0;
 
-    usleep(500000); //not sure what this is for
 
+    // next fork a child to call read on the fifo device in while(1)
+
+    pid_t childpid;
+    if ( (childpid = fork()) < 0)
+	{
+		fprintf(stderr, "Fork failed\n");
+	}
+
+  	if (childpid == 0 )
+    {
+        //child code
+		execl("./read_fifo_store_data", "read_fifo_store_data", (char*) 0);
+		fprintf(stderr, "Child failed to execl command\n");
+		return -1;
+	}
+
+    state SMSTATE = IDLE;
+	int child_status;
     while (1)
     {
         t = get_timestamp_ms() - t_0;
         SMSTATE = checkState(SMSTATE);
+		if ( waitpid(childpid, &child_status, WNOHANG) == childpid)// just for testing, not flight code
+		{
+			break;
+		}
     }
 
 //    close_imu();
+	fclose(VN100File);
 
     // need to prob send a kill() to child process and then wait();
-/*
-   int child_status;
-    kill(childpid, SIGTERM);
-    fprintf(stderr, "Sent SIGTERM signal to child process %i : Now waiting for it\n", childpid);
-    waitpid(childpid, &child_status, WNOHANG);
-*/
+
+//	 kill(childpid, SIGTERM);
+//    fprintf(stderr, "Sent SIGTERM signal to child process %i : Now waiting for it\n", childpid);
+//   waitpid(childpid, &child_status, WNOHANG);
     return 0;
 }
