@@ -36,6 +36,8 @@ void loop() {
       digitalWrite(output_enable, HIGH);
     }
     bale_flag = false;
+    digitalWrite(read_enable, LOW);
+    digitalWrite(output_enable, LOW);
   }
 
 
