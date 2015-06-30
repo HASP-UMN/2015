@@ -34,10 +34,12 @@ void loop() {
     if (address_valid && IOR){
       digitalWrite(read_enable, HIGH);
       digitalWrite(output_enable, HIGH);
+      digitalWrite(address_valid, LOW);
+      digitalWrite(IOR, LOW);
+      digitalWrite(read_enable, LOW);
+      digitalWrite(output_enable, LOW);
     }
     bale_flag = false;
-    digitalWrite(read_enable, LOW);
-    digitalWrite(output_enable, LOW);
   }
 
 
