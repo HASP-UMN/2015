@@ -7,9 +7,11 @@
 #define IRQ_OUT // to Tomcat
 
 volatile bool bale_flag = false;
+volatile bool half_full_flag = false;
 
 void half_full_handler(){
   digitalWrite(IRQ_OUT, HIGH); 
+  half_full_flag = true;
 }
 
 void bale_handler(){
@@ -34,13 +36,15 @@ void loop() {
     if (address_valid && IOR){
       digitalWrite(read_enable, HIGH);
       digitalWrite(output_enable, HIGH);
-      digitalWrite(address_valid, LOW);
-      digitalWrite(IOR, LOW);
-      digitalWrite(read_enable, LOW);
+      digitalWrite(address_valid, LOW); // not sure about this
+      digitalWrite(IOR, LOW); //not sure about this
+      digitalWrite(read_enable, LOW); //not sure how long these need to be set for
       digitalWrite(output_enable, LOW);
     }
     bale_flag = false;
   }
-
-
-}
+  
+  if (half_full_flag){
+    digitalWrite(IRQ_OUT, LOW);
+    half_full_flag = false;
+  }
