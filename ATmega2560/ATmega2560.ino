@@ -22,6 +22,7 @@
 
 // Global variables
 const int ADCchipSelect = 53;        // Chip select for A/D converter
+const int pSig = 52;                 // Data packet signifier
 volatile bool newEventCH1 = false;   // New event flag for MCA channel 1
 volatile bool newEventCH2 = false;   // New event flag for MCA channel 2
 volatile bool newEventCH3 = false;   // New event flag for MCA channel 3
@@ -72,27 +73,22 @@ void setup() {
   pinMode(RESET_CH2, OUTPUT);
   pinMode(RESET_CH3, OUTPUT);
   pinMode(RESET_CH4, OUTPUT);
-//  pinMode(PF_0, OUTPUT);
-//  pinMode(PF_1, OUTPUT);
-//  pinMode(PF_2, OUTPUT);
-//  pinMode(PF_3, OUTPUT);
-//  pinMode(PF_4, OUTPUT);
-//  pinMode(PF_5, OUTPUT);
-//  pinMode(PF_6, OUTPUT);
-//  pinMode(PF_7, OUTPUT);
-//  
-//  pinMode(FIFO_SRST OUTPUT);
-//  pinMode(FIFO_WR, OUTPUT);
-//  pinMode(FIFO_FF, OUTPUT);
+  pinMode(pSig,OUTPUT);
   
-  //digitalWrite(A0, HIGH);...?
-  
+  // Initialize digital outputs
   digitalWrite(ADCchipSelect, HIGH);
   digitalWrite(RESET_CH1, LOW);
   digitalWrite(RESET_CH2, LOW);
   digitalWrite(RESET_CH3, LOW);
   digitalWrite(RESET_CH4, LOW);
-
+  digitalWrite(pSig,LOW);
+  
+  // DDRF is the direction register for Port D. The bits in this register control whether the pins in PORTF are configured as inputs or outputs so:
+  DDRF = DDRF | B11111111;  // sets ATmega2560 analog pins A0 to A7 as outputs (which is what we want for sending byte-byte data to the FIFO).
+  
+  // PORTF is the register for the state of the outputs. So:
+  PORTF = B00000000;  // sets analog pins A[0-7] LOW.
+  
   // Open serial port
   Serial.begin(115200);
 
@@ -129,6 +125,7 @@ void setup() {
   Serial.println("=============================");
 
   delay(100);
+  delay(5000);
 }
 
 void loop() {
@@ -211,14 +208,76 @@ void loop() {
     delayMicroseconds(5);
     digitalWrite(RESET_CH2, LOW);
 
-    // Debug etc.:
-    Serial.print("2");    Serial.print(',');
-    Serial.print(timeMs); Serial.print(',');
-    Serial.print(peakCH2); Serial.print(','); Serial.println((tempRaw - 3777.2)/0.47);    
-    // A/D converter channel label (1 byte)
-    // Dummy timestamp (4 bytes)
-    // Digitally converted detector voltage (2 bytes)
-    // Internal temperature reading from A/D converter (2 bytes)
+//    // Debug etc.:
+//    Serial.print("2");    Serial.print(',');
+//    Serial.print(timeMs); Serial.print(',');
+//    Serial.print(peakCH2); Serial.print(','); Serial.println((tempRaw - 3777.2)/0.47);    
+////    // A/D converter channel label (1 byte)
+////    // Dummy timestamp (4 bytes)
+////    // Digitally converted detector voltage (2 bytes)
+////    // Internal temperature reading from A/D converter (2 bytes)
+//    Serial.print( channel,              BIN); Serial.print(" ");   // [1st byte]
+//    Serial.print( timeMs&0xFF,          BIN); Serial.print(" ");   // [2nd byte]
+//    Serial.print((timeMs&0xFF00)>>8,    BIN); Serial.print(" ");   // [3rd byte]
+//    Serial.print((timeMs&0xFF0000)>>16, BIN); Serial.print(" ");   // [4th byte]
+//    Serial.print((timeMs&0xFF0000)>>24, BIN); Serial.print(" ");   // [5th byte]
+//    Serial.print( peakCH2&0xFF,         BIN); Serial.print(" ");   // [6th byte]
+//    Serial.print((peakCH2&0xFF00)>>8,   BIN); Serial.print(" ");   // [7th byte]
+//    Serial.print( tempRaw&0xFF,         BIN); Serial.print(" ");   // [8th byte]
+//    Serial.print((tempRaw&0xFF00)>>8,   BIN); Serial.println(" "); // [9th byte]
+//    Serial.println(" "); Serial.println(" ");
+
+    digitalWrite(pSig,HIGH);
+    
+    PORTF = channel;                //Serial.print("SENT CH#: ");   // [1st byte]
+    PORTF = B00000000;  // sets analog pins A[0-7] LOW.
+    
+    if(!timeMs&0xFF)
+    {
+      delay(10);
+    }
+    PORTF = timeMs&0xFF;            //Serial.print("SENT TS1: ");   // [2nd byte]
+    PORTF = B00000000;  // sets analog pins A[0-7] LOW.
+
+    if(!timeMs&0xFF00)
+    {
+      delay(10);
+    }
+    PORTF = (timeMs&0xFF00)>>8;     //Serial.print("SENT TS2: ");   // [3rd byte]
+    PORTF = B00000000;  // sets analog pins A[0-7] LOW.
+
+    if(!timeMs&0xFF0000)
+    {
+      delay(10);
+    }
+    PORTF = (timeMs&0xFF0000)>>16;  //Serial.print("SENT TS3: ");   // [4th byte]
+    PORTF = B00000000;  // sets analog pins A[0-7] LOW.
+
+    if(!timeMs&0xFF0000)
+    {
+      delay(10);
+    }
+    PORTF = (timeMs&0xFF0000)>>24;  //Serial.print("SENT TS4: ");   // [5th byte]
+    PORTF = B00000000;  // sets analog pins A[0-7] LOW.
+
+    PORTF = peakCH2&0xFF;           //Serial.print("SENT PK1: ");   // [6th byte]
+    PORTF = B00000000;  // sets analog pins A[0-7] LOW.
+
+    PORTF = (peakCH2&0xFF00)>>8;    //Serial.print("SENT PK2: ");   // [7th byte]
+    PORTF = B00000000;  // sets analog pins A[0-7] LOW.
+
+    PORTF = tempRaw&0xFF;           //Serial.print("SENT TE1: ");   // [8th byte]
+    PORTF = B00000000;  // sets analog pins A[0-7] LOW.
+
+    PORTF = (tempRaw&0xFF00)>>8;    //Serial.print("SENT TE2: ");   // [9th byte]
+    PORTF = B00000000;  // sets analog pins A[0-7] LOW.
+    
+    // END PACKET TRANSMISSION
+    digitalWrite(pSig,LOW);
+    peakCH2 = 0;
+    newEventCH2 = false;
+    
+    // SERIAL DEBUG
     Serial.print( channel,              BIN); Serial.print(" ");   // [1st byte]
     Serial.print( timeMs&0xFF,          BIN); Serial.print(" ");   // [2nd byte]
     Serial.print((timeMs&0xFF00)>>8,    BIN); Serial.print(" ");   // [3rd byte]
@@ -228,11 +287,9 @@ void loop() {
     Serial.print((peakCH2&0xFF00)>>8,   BIN); Serial.print(" ");   // [7th byte]
     Serial.print( tempRaw&0xFF,         BIN); Serial.print(" ");   // [8th byte]
     Serial.print((tempRaw&0xFF00)>>8,   BIN); Serial.println(" "); // [9th byte]
-    Serial.println(" ");
-    Serial.println(" ");
+    Serial.println(" "); Serial.println(" ");
+    Serial.println("---------------------------------------------");
     
-    peakCH2 = 0;
-    newEventCH2 = false;
   }
 
   if (newEventCH3) {
