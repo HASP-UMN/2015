@@ -214,15 +214,15 @@ void loop() {
 
     // Begin PORT7 write
     //digitalWrite(pSig,HIGH);
-    PORTF = (channel & 0xFF);            PORTF = B00000000; // [1st byte]
-    PORTF = (timeMs  & 0xFF);            PORTF = B00000000; // [2nd byte]
-    PORTF = (timeMs  & 0xFF00)>>8;       PORTF = B00000000; // [3rd byte]
-    PORTF = (timeMs  & 0xFF0000)>>16;    PORTF = B00000000; // [4th byte]
-    PORTF = (timeMs  & 0xFF000000)>>24;  PORTF = B00000000; // [5th byte]
-    PORTF = (peakCH2 & 0xFF);            PORTF = B00000000; // [6th byte]
-    PORTF = (peakCH2 & 0xFF00)>>8;       PORTF = B00000000; // [7th byte]
-    PORTF = (tempRaw & 0xFF);            PORTF = B00000000; // [8th byte]
-    PORTF = (tempRaw & 0xFF00)>>8;       PORTF = B00000000; // [9th byte]
+    PORTF = (channel & 0xFF);            PORTF = B00000001; // [1st byte]
+    PORTF = (timeMs  & 0xFF);            PORTF = B00000001; // [2nd byte]
+    PORTF = (timeMs  & 0xFF00)>>8;       PORTF = B00000001; // [3rd byte]
+    PORTF = (timeMs  & 0xFF0000)>>16;    PORTF = B00000001; // [4th byte]
+    PORTF = (timeMs  & 0xFF000000)>>24;  PORTF = B00000001; // [5th byte]
+    PORTF = (peakCH2 & 0xFF);            PORTF = B00000001; // [6th byte]
+    PORTF = (peakCH2 & 0xFF00)>>8;       PORTF = B00000001; // [7th byte]
+    PORTF = (tempRaw & 0xFF);            PORTF = B00000001; // [8th byte]
+    PORTF = (tempRaw & 0xFF00)>>8;       PORTF = B00000001; // [9th byte]
     
     // End PORT7 write
     //digitalWrite(pSig,LOW);
