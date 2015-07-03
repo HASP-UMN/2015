@@ -216,13 +216,13 @@ void loop() {
     //digitalWrite(pSig,HIGH);
     PORTF = (channel & 0xFF);            PORTF = B00000001; // [1st byte]
     PORTF = (timeMs  & 0xFF);            PORTF = B00000001; // [2nd byte]
-    PORTF = (timeMs  & 0x00FF)>>8;       PORTF = B00000001; // [3rd byte]
-    PORTF = (timeMs  & 0x0000FF)>>16;    PORTF = B00000001; // [4th byte]
-    PORTF = (timeMs  & 0x000000FF)>>24;  PORTF = B00000001; // [5th byte]
+    PORTF = (timeMs  & 0xFF00)>>8;       PORTF = B00000001; // [3rd byte]
+    PORTF = (timeMs  & 0xFF0000)>>16;    PORTF = B00000001; // [4th byte]
+    PORTF = (timeMs  & 0xFF000000)>>24;  PORTF = B00000001; // [5th byte]
     PORTF = (peakCH2 & 0xFF);            PORTF = B00000001; // [6th byte]
-    PORTF = (peakCH2 & 0x00FF)>>8;       PORTF = B00000001; // [7th byte]
+    PORTF = (peakCH2 & 0xFF00)>>8;       PORTF = B00000001; // [7th byte]
     PORTF = (tempRaw & 0xFF);            PORTF = B00000001; // [8th byte]
-    PORTF = (tempRaw & 0x00FF)>>8;       PORTF = B00000001; // [9th byte]
+    PORTF = (tempRaw & 0xFF00)>>8;       PORTF = B00000001; // [9th byte]
     
     // End PORT7 write
     //digitalWrite(pSig,LOW);
@@ -230,13 +230,13 @@ void loop() {
     // Debugging
     Serial.println((channel & 0xFF),            BIN); // [1st byte]
     Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
-    Serial.println((timeMs  & 0x00FF)>>8,       BIN); // [3rd byte]
-    Serial.println((timeMs  & 0x0000FF)>>16,    BIN); // [4th byte]
-    Serial.println((timeMs  & 0x000000FF)>>24,  BIN); // [5th byte]
+    Serial.println((timeMs  & 0xFF00)>>8,       BIN); // [3rd byte]
+    Serial.println((timeMs  & 0xFF0000)>>16,    BIN); // [4th byte]
+    Serial.println((timeMs  & 0xFF000000)>>24,  BIN); // [5th byte]
     Serial.println((peakCH2 & 0xFF),            BIN); // [6th byte]
-    Serial.println((peakCH2 & 0x00FF)>>8,       BIN); // [7th byte]
+    Serial.println((peakCH2 & 0xFF00)>>8,       BIN); // [7th byte]
     Serial.println((tempRaw & 0xFF),            BIN); // [8th byte]
-    Serial.println((tempRaw & 0x00FF)>>8,       BIN); // [9th byte]
+    Serial.println((tempRaw & 0xFF00)>>8,       BIN); // [9th byte]
     Serial.println("---------------------------------------------");
     
     // Reset peak value and interrupt flag for CH2
