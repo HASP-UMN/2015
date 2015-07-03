@@ -73,7 +73,7 @@ void setup() {
   pinMode(RESET_CH2, OUTPUT);
   pinMode(RESET_CH3, OUTPUT);
   pinMode(RESET_CH4, OUTPUT);
-  pinMode(pSig,OUTPUT);
+  //pinMode(pSig,OUTPUT);
   
   // Initialize digital outputs
   digitalWrite(ADCchipSelect, HIGH);
