@@ -73,7 +73,7 @@ void setup() {
   pinMode(RESET_CH2, OUTPUT);
   pinMode(RESET_CH3, OUTPUT);
   pinMode(RESET_CH4, OUTPUT);
-  pinMode(pSig,OUTPUT);
+  //pinMode(pSig,OUTPUT);
   
   // Initialize digital outputs
   digitalWrite(ADCchipSelect, HIGH);
@@ -81,7 +81,7 @@ void setup() {
   digitalWrite(RESET_CH2, LOW);
   digitalWrite(RESET_CH3, LOW);
   digitalWrite(RESET_CH4, LOW);
-  digitalWrite(pSig,LOW);
+  //digitalWrite(pSig,LOW);
   
   // DDRF is the direction register for Port D. The bits in this register control whether the pins in PORTF are configured as inputs or outputs so:
   DDRF = DDRF | B11111111;  // sets ATmega2560 analog pins A0 to A7 as outputs (which is what we want for sending byte-byte data to the FIFO).
@@ -208,88 +208,40 @@ void loop() {
     delayMicroseconds(5);
     digitalWrite(RESET_CH2, LOW);
 
-//    // Debug etc.:
-//    Serial.print("2");    Serial.print(',');
-//    Serial.print(timeMs); Serial.print(',');
-//    Serial.print(peakCH2); Serial.print(','); Serial.println((tempRaw - 3777.2)/0.47);    
-////    // A/D converter channel label (1 byte)
-////    // Dummy timestamp (4 bytes)
-////    // Digitally converted detector voltage (2 bytes)
-////    // Internal temperature reading from A/D converter (2 bytes)
-//    Serial.print( channel,              BIN); Serial.print(" ");   // [1st byte]
-//    Serial.print( timeMs&0xFF,          BIN); Serial.print(" ");   // [2nd byte]
-//    Serial.print((timeMs&0xFF00)>>8,    BIN); Serial.print(" ");   // [3rd byte]
-//    Serial.print((timeMs&0xFF0000)>>16, BIN); Serial.print(" ");   // [4th byte]
-//    Serial.print((timeMs&0xFF0000)>>24, BIN); Serial.print(" ");   // [5th byte]
-//    Serial.print( peakCH2&0xFF,         BIN); Serial.print(" ");   // [6th byte]
-//    Serial.print((peakCH2&0xFF00)>>8,   BIN); Serial.print(" ");   // [7th byte]
-//    Serial.print( tempRaw&0xFF,         BIN); Serial.print(" ");   // [8th byte]
-//    Serial.print((tempRaw&0xFF00)>>8,   BIN); Serial.println(" "); // [9th byte]
-//    Serial.println(" "); Serial.println(" ");
+    Serial.print("2");    Serial.print(',');
+    Serial.print(timeMs); Serial.print(',');
+    Serial.println(peakCH2); Serial.println(" ");
 
-    digitalWrite(pSig,HIGH);
+    // Begin PORT7 write
+    //digitalWrite(pSig,HIGH);
+    PORTF = (channel & 0xFF);            PORTF = B00000001; // [1st byte]
+    PORTF = (timeMs  & 0xFF);            PORTF = B00000001; // [2nd byte]
+    PORTF = (timeMs  & 0xFF00)>>8;       PORTF = B00000001; // [3rd byte]
+    PORTF = (timeMs  & 0xFF0000)>>16;    PORTF = B00000001; // [4th byte]
+    PORTF = (timeMs  & 0xFF000000)>>24;  PORTF = B00000001; // [5th byte]
+    PORTF = (peakCH2 & 0xFF);            PORTF = B00000001; // [6th byte]
+    PORTF = (peakCH2 & 0xFF00)>>8;       PORTF = B00000001; // [7th byte]
+    PORTF = (tempRaw & 0xFF);            PORTF = B00000001; // [8th byte]
+    PORTF = (tempRaw & 0xFF00)>>8;       PORTF = B00000001; // [9th byte]
     
-    PORTF = channel;                //Serial.print("SENT CH#: ");   // [1st byte]
-    PORTF = B00000000;  // sets analog pins A[0-7] LOW.
-    
-    if(!timeMs&0xFF)
-    {
-      delay(10);
-    }
-    PORTF = timeMs&0xFF;            //Serial.print("SENT TS1: ");   // [2nd byte]
-    PORTF = B00000000;  // sets analog pins A[0-7] LOW.
-
-    if(!timeMs&0xFF00)
-    {
-      delay(10);
-    }
-    PORTF = (timeMs&0xFF00)>>8;     //Serial.print("SENT TS2: ");   // [3rd byte]
-    PORTF = B00000000;  // sets analog pins A[0-7] LOW.
-
-    if(!timeMs&0xFF0000)
-    {
-      delay(10);
-    }
-    PORTF = (timeMs&0xFF0000)>>16;  //Serial.print("SENT TS3: ");   // [4th byte]
-    PORTF = B00000000;  // sets analog pins A[0-7] LOW.
-
-    if(!timeMs&0xFF0000)
-    {
-      delay(10);
-    }
-    PORTF = (timeMs&0xFF0000)>>24;  //Serial.print("SENT TS4: ");   // [5th byte]
-    PORTF = B00000000;  // sets analog pins A[0-7] LOW.
-
-    PORTF = peakCH2&0xFF;           //Serial.print("SENT PK1: ");   // [6th byte]
-    PORTF = B00000000;  // sets analog pins A[0-7] LOW.
-
-    PORTF = (peakCH2&0xFF00)>>8;    //Serial.print("SENT PK2: ");   // [7th byte]
-    PORTF = B00000000;  // sets analog pins A[0-7] LOW.
-
-    PORTF = tempRaw&0xFF;           //Serial.print("SENT TE1: ");   // [8th byte]
-    PORTF = B00000000;  // sets analog pins A[0-7] LOW.
-
-    PORTF = (tempRaw&0xFF00)>>8;    //Serial.print("SENT TE2: ");   // [9th byte]
-    PORTF = B00000000;  // sets analog pins A[0-7] LOW.
-    
-    // END PACKET TRANSMISSION
-    digitalWrite(pSig,LOW);
-    peakCH2 = 0;
-    newEventCH2 = false;
-    
-    // SERIAL DEBUG
-    Serial.print( channel,              BIN); Serial.print(" ");   // [1st byte]
-    Serial.print( timeMs&0xFF,          BIN); Serial.print(" ");   // [2nd byte]
-    Serial.print((timeMs&0xFF00)>>8,    BIN); Serial.print(" ");   // [3rd byte]
-    Serial.print((timeMs&0xFF0000)>>16, BIN); Serial.print(" ");   // [4th byte]
-    Serial.print((timeMs&0xFF0000)>>24, BIN); Serial.print(" ");   // [5th byte]
-    Serial.print( peakCH2&0xFF,         BIN); Serial.print(" ");   // [6th byte]
-    Serial.print((peakCH2&0xFF00)>>8,   BIN); Serial.print(" ");   // [7th byte]
-    Serial.print( tempRaw&0xFF,         BIN); Serial.print(" ");   // [8th byte]
-    Serial.print((tempRaw&0xFF00)>>8,   BIN); Serial.println(" "); // [9th byte]
-    Serial.println(" "); Serial.println(" ");
+    // End PORT7 write
+    //digitalWrite(pSig,LOW);
+       
+    // Debugging
+    Serial.println((channel & 0xFF),            BIN); // [1st byte]
+    Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
+    Serial.println((timeMs  & 0xFF00)>>8,       BIN); // [3rd byte]
+    Serial.println((timeMs  & 0xFF0000)>>16,    BIN); // [4th byte]
+    Serial.println((timeMs  & 0xFF000000)>>24,  BIN); // [5th byte]
+    Serial.println((peakCH2 & 0xFF),            BIN); // [6th byte]
+    Serial.println((peakCH2 & 0xFF00)>>8,       BIN); // [7th byte]
+    Serial.println((tempRaw & 0xFF),            BIN); // [8th byte]
+    Serial.println((tempRaw & 0xFF00)>>8,       BIN); // [9th byte]
     Serial.println("---------------------------------------------");
     
+    // Reset peak value and interrupt flag for CH2
+    peakCH2 = 0; newEventCH2 = false;
+    delay(1000);
   }
 
   if (newEventCH3) {
