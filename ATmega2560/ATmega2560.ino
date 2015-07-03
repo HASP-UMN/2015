@@ -19,6 +19,7 @@
 #define IRQ_CH2 1    // Arduino Mega 2560 interrupt 1 (pin 3)
 #define IRQ_CH3 4    // Arduino Mega 2560 interrupt 4 (pin 19)
 #define IRQ_CH4 5    // Arduino Mega 2560 interrupt 5 (pin 18)
+#define FULL_FLAG 88 // Full flag from the FIFO (pin 88 / A9)
 
 // Global variables
 const int ADCchipSelect = 53;        // Chip select for A/D converter
@@ -27,6 +28,7 @@ volatile bool newEventCH1 = false;   // New event flag for MCA channel 1
 volatile bool newEventCH2 = false;   // New event flag for MCA channel 2
 volatile bool newEventCH3 = false;   // New event flag for MCA channel 3
 volatile bool newEventCH4 = false;   // New event flag for MCA channel 4
+volatile bool FIFO_FF = false;       // Full flag for FIFO
 unsigned long timeMs = 0;            // Time in milliseconds
 uint16_t peakCH1 = 0;                // Peak value for MCA channel 1  
 uint16_t peakCH2 = 0;                // Peak value for MCA channel 2
@@ -65,6 +67,17 @@ void eventISR_CH4() {
   // Ignore new events if another event (on any channel) is currently being processed
 }
 
+void eventISR_FF() {
+
+  if (!FIFO_RST && !FIFO_FF)
+    FIFO_FF = true;
+  // The Full Flag (FF) will go LOW, inhibiting further write operation,
+  // when the write pointer is one location less than the read pointer,
+  // indicating that the device is full. If the read pointer is not moved
+  // after Reset (RS), the Full-Flag (FF) will go LOW after 256 writes for
+  // IDT7200, 512 writes for the IDT7201A and 1,024 writes for the IDT7202A.
+}
+
 
 void setup() {
   // Set up digital outputs
@@ -73,6 +86,7 @@ void setup() {
   pinMode(RESET_CH2, OUTPUT);
   pinMode(RESET_CH3, OUTPUT);
   pinMode(RESET_CH4, OUTPUT);
+  pinMode(FULL_FLAG, OUTPUT);
   //pinMode(pSig,OUTPUT);
   
   // Initialize digital outputs
@@ -81,6 +95,7 @@ void setup() {
   digitalWrite(RESET_CH2, LOW);
   digitalWrite(RESET_CH3, LOW);
   digitalWrite(RESET_CH4, LOW);
+  digitalWrite(FULL_FLAG, HIGH);
   //digitalWrite(pSig,LOW);
   
   // DDRF is the direction register for Port D. The bits in this register control whether the pins in PORTF are configured as inputs or outputs so:
@@ -121,6 +136,7 @@ void setup() {
   attachInterrupt(IRQ_CH2, eventISR_CH2, RISING);
   attachInterrupt(IRQ_CH3, eventISR_CH3, RISING);
   attachInterrupt(IRQ_CH4, eventISR_CH4, RISING);
+  attachInterrupt(FULL_FLAG, eventISR_FF, FALLING);
 
   Serial.println("=============================");
 
@@ -214,15 +230,15 @@ void loop() {
 
     // Begin PORT7 write
     //digitalWrite(pSig,HIGH);
-    PORTF = (channel & 0xFF);            PORTF = B00000001; // [1st byte]
-    PORTF = (timeMs  & 0xFF);            PORTF = B00000001; // [2nd byte]
-    PORTF = (timeMs  & 0xFF00)>>8;       PORTF = B00000001; // [3rd byte]
-    PORTF = (timeMs  & 0xFF0000)>>16;    PORTF = B00000001; // [4th byte]
-    PORTF = (timeMs  & 0xFF000000)>>24;  PORTF = B00000001; // [5th byte]
-    PORTF = (peakCH2 & 0xFF);            PORTF = B00000001; // [6th byte]
-    PORTF = (peakCH2 & 0xFF00)>>8;       PORTF = B00000001; // [7th byte]
-    PORTF = (tempRaw & 0xFF);            PORTF = B00000001; // [8th byte]
-    PORTF = (tempRaw & 0xFF00)>>8;       PORTF = B00000001; // [9th byte]
+    PORTF = (channel & 0xFF);            PORTF = B00000000; // [1st byte]
+    PORTF = (timeMs  & 0xFF);            PORTF = B00000000; // [2nd byte]
+    PORTF = (timeMs  & 0xFF00)>>8;       PORTF = B00000000; // [3rd byte]
+    PORTF = (timeMs  & 0xFF0000)>>16;    PORTF = B00000000; // [4th byte]
+    PORTF = (timeMs  & 0xFF000000)>>24;  PORTF = B00000000; // [5th byte]
+    PORTF = (peakCH2 & 0xFF);            PORTF = B00000000; // [6th byte]
+    PORTF = (peakCH2 & 0xFF00)>>8;       PORTF = B00000000; // [7th byte]
+    PORTF = (tempRaw & 0xFF);            PORTF = B00000000; // [8th byte]
+    PORTF = (tempRaw & 0xFF00)>>8;       PORTF = B00000000; // [9th byte]
     
     // End PORT7 write
     //digitalWrite(pSig,LOW);
