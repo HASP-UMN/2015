@@ -24,21 +24,27 @@
 #include "read_fifo_store_data.h"
 //#include "timing.h"
 #include "VN100.h"
+#include "gps_novatel.h"
 
 //Data structures
 struct imu imuData;
 struct gps gpsData;
 struct photons photonData;
+
+// IMU
 FILE* VN100File;
 #define imu_stream_length 131
 char imu_data[imu_stream_length];
+
+// GPS
+#define GPS_PORT "/dev/ttyS1"
 
 //Timestamps stored as longs
 unsigned long t, t_0;
 unsigned long imuStamp,gpsStamp,telStamp,eventStamp;
 int imu_fd;
 
-// buffer for reading from photon data fifo 
+// buffer for reading from photon data fifo
 #define 		     PHOTON_BUF_MAX 500
 unsigned char        PHOTON_DATA_BUFFER[PHOTON_BUF_MAX];
 #define              BYTES_PER_PHOTON 10
@@ -93,11 +99,11 @@ state checkState(state SMSTATE)
         case RD_GPS:
 
             fprintf(stderr, "state = RD_GPS\n");
-            /*
+
             if (!read_GPS(&gpsData) ){
-                GPSlogger(&gpsData, log_period);
+                //GPSlogger(&gpsData, log_period);
             }
-			*/
+
             gpsStamp = get_timestamp_ms();
 
             SMSTATE = IDLE;
@@ -134,8 +140,15 @@ state checkState(state SMSTATE)
 
 int main()
 {
+
+    // Initialize IMU
 	imu_fd = init_vn100();
 	VN100File = fopen(IMU_DATAFILE,"a");
+
+    // Initialize GPS
+	init_GPS(&gpsData);
+	gpsData.GPSDataFile = fopen("","a");
+
 // add init for gps and telemetry here
 	t_0 = get_timestamp_ms();
 //    t = get_timestamp_ms() - t_0; // pointless
@@ -151,7 +164,7 @@ int main()
 
 
     // next fork a child to call read on the fifo device in while(1)
-
+/*
     pid_t childpid;
     if ( (childpid = fork()) < 0)
 	{
@@ -165,21 +178,24 @@ int main()
 		fprintf(stderr, "Child failed to execl command\n");
 		return -1;
 	}
-
+*/
     state SMSTATE = IDLE;
 	int child_status;
     while (1)
     {
         t = get_timestamp_ms() - t_0;
         SMSTATE = checkState(SMSTATE);
-		if ( waitpid(childpid, &child_status, WNOHANG) == childpid)// just for testing, not flight code
+	/*	if ( waitpid(childpid, &child_status, WNOHANG) == childpid)// just for testing, not flight code
 		{
 			break;
-		}
+		} */
     }
 
-//    close_imu();
+    // Close IMU Data File
 	fclose(VN100File);
+
+	// Close GPS Data File
+	fclose(gpsData.GPSDataFile);
 
     // need to prob send a kill() to child process and then wait();
 

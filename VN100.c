@@ -22,10 +22,11 @@
 #include "serial.h"
 #include "VN100.h"
 
-// VN100 Commands: Baud Rates //
+// VN100 I/O
 const char* IMU_PORT = "/dev/ttyUSB0";             // TTY PORT TO VN100 (SET UP BY ftdi_sio KERNEL DRIVER)
 const char* IMU_DATAFILE = "IMU_VN100.txt";        // Path to file where VN100 IMU date will be recorded
 
+// VN100 Commands: Baud Rates //
 unsigned char vn100_B9600[] = "$VNWRG,5,9600*60\n";
 unsigned char vn100_B115200[] = "$VNWRG,5,115200*60\n";
 unsigned char vn100_B230400[] = "$VNWRG,5,230400*6A\n";
@@ -51,7 +52,7 @@ int init_vn100(){
 	if (fd < 0){
 		fprintf(stderr, "Failed to open IMU port\n");
 		return -1;
-		}//endif
+    }//endif
 
 	// Sets up serial settings
 	set_interface_attribs(fd, B115200, 0);

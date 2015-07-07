@@ -27,8 +27,11 @@
 // STRUCTURE FOR OEMSTAR DATA (BESTXYZB)
 struct gps
 {
+    // GPS I/O
+    int gps_fd;                     // GPS receiver serial communication file descriptor
+    FILE* GPSDataFile;              // GPS file to write data to
+
     // RECEIVER CHARACTERISTICS
-    int port;                       // GPS receiver serial communication port
     int readCalls;                  // Number of times read_gps has been called
     int badDataCounter;             // Number of bad read from read_gps (rests after 5)
     int posValFlag;                 // Flag signifying valid XYZ position from receiver
@@ -42,15 +45,15 @@ struct gps
 
     // GPS ECEF X (TELEMETRY PACKET BYTES 3-9)
     double Xe;                      // X position (ECEF) [m]
-    float  P_Xe;                    // X std dev [m]
+    float  P_Xe;                    // X std dev [m]                      // Is this used?????
 
     // GPS ECEF Y (TELEMETRY PACKET BYTES 10-18)
     double Ye;                      // Y position (ECEF) [m]
-    float  P_Ye;                    // Y std dev [m]
+    float  P_Ye;                    // Y std dev [m]                      // Is this used?????
 
     // GPS ECEF Z (TELEMETRY PACKET BYTES 19-27)
     double Ze;                      // Z position (ECEF) [m]
-    float  P_Ze;                    // Z std dev [m]
+    float  P_Ze;                    // Z std dev [m]                      // Is this used?????
 };
 
 
