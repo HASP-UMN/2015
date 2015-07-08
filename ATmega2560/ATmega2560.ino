@@ -1,79 +1,91 @@
 #include <SPI.h>
 
-// Addresses and commands for A/D operation. See ADS8634 datasheet.
-#define ADC_CONFIG 0b00000110    // Enable internal Vref and temperature sensor
-#define READ_CH1 0b01001010      // Read A/D channel 2 (MCA ch.1) with 0 to 10V range
-#define READ_CH2 0b01101010      // Read A/D channel 3 (MCA ch.2) with 0 to 10V range
-#define READ_CH3 0b00001010      // Read A/D channel 0 (MCA ch.3) with 0 to 10V range
-#define READ_CH4 0b00101010      // Read A/D channel 1 (MCA ch.4) with 0 to 10V range
-#define READ_TEMP 0b00000001     // Read temperature sensor
-#define CONFIG_ADDR 0x06         // 7-bit internal control register address
-#define MANUAL_READ_ADDR 0x04    // 7-bit address for manual mode read register
-
-// Peak detector reset pins and discriminator interrupts
-#define RESET_CH1 4  // Channel 1 peak detector reset from Arduino pin 4
-#define RESET_CH2 5  // Channel 2 peak detector reset from Arduino pin 5
-#define RESET_CH3 6  // Channel 3 peak detector reset from Arduino pin 6
-#define RESET_CH4 7  // Channel 4 peak detector reset from Arduino pin 7
-#define IRQ_CH1 0    // Arduino Mega 2560 interrupt 0 (pin 2)
-#define IRQ_CH2 1    // Arduino Mega 2560 interrupt 1 (pin 3)
-#define IRQ_CH3 4    // Arduino Mega 2560 interrupt 4 (pin 19)
-#define IRQ_CH4 5    // Arduino Mega 2560 interrupt 5 (pin 18)
-#define FULL_FLAG 88 // Full flag from the FIFO (pin 88 / A9)
-
-// Global variables
-const int ADCchipSelect = 53;        // Chip select for A/D converter
-//const int pSig = 52;                 // Data packet signifier
-volatile bool newEventCH1 = false;   // New event flag for MCA channel 1
-volatile bool newEventCH2 = false;   // New event flag for MCA channel 2
-volatile bool newEventCH3 = false;   // New event flag for MCA channel 3
-volatile bool newEventCH4 = false;   // New event flag for MCA channel 4
-volatile bool FIFO_FF = false;       // Full flag for FIFO
-unsigned long timeMs = 0;            // Time in milliseconds
-uint16_t peakCH1 = 0;                // Peak value for MCA channel 1  
-uint16_t peakCH2 = 0;                // Peak value for MCA channel 2
-uint16_t peakCH3 = 0;                // Peak value for MCA channel 3
-uint16_t peakCH4 = 0;                // Peak value for MCA channel 4
-uint16_t tempRaw = 0;                // A/D converter's internal temp sensor
-uint8_t channel = 0;                 // MCA channel tag
-
-//Communication to/from FIFO
-//#define FIFO_RESET 19 //digital pin 19, PD2
-#define FIFO_RESET B00000010 // PH1
-//#define FIFO_WRITE_ENABLE 12 // PH0
-//#define FIFO_READ_ENABLE 22
-#define FIFO_WRITE_ENABLE B01000000 // PB6, the eagle schematic has pin 12 labeled as PH0 but its actually PB6
-#define FIFO_FULL_INT 4 // using external interrupt 4 which is on port PE4 (digital pin 2)
-volatile bool fifo_full_flag = false;
+// Addresses and commands for A/D operation (SPI interface). See ADS8634 datasheet.
+#define ADC_CONFIG       0B00000110 // Enable internal Vref and temperature sensor.
+#define READ_CH1         0B01001010 // Read A/D channel 2 (MCA ch.1) with 0 to 10V range.
+#define READ_CH2         0B01101010 // Read A/D channel 3 (MCA ch.2) with 0 to 10V range.
+#define READ_CH3         0B00001010 // Read A/D channel 0 (MCA ch.3) with 0 to 10V range.
+#define READ_CH4         0B00101010 // Read A/D channel 1 (MCA ch.4) with 0 to 10V range.
+#define READ_TEMP        0B00000001 // Read temperature sensor.
+#define CONFIG_ADDR      0x06 // 7-bit internal control register address
+#define MANUAL_READ_ADDR 0x04 // 7-bit address for manual mode read register
 
 
-// Interrupt handlers
+// Peak detector resets, FIFO reset, and FIFO write enable. PORTH on the ATmega2560 (outputs).
+#define ADC_CS    B11111101 // PH6: A/D converter chip select (active LOW)
+#define RESET_CH1 B00000100 // PH5: Channel 1 peak detector reset (active HIGH)
+#define RESET_CH2 B00001000 // PH4: Channel 2 peak detector reset (active HIGH)
+#define RESET_CH3 B00010000 // PH3: Channel 3 peak detector reset (active HIGH)
+#define RESET_CH4 B00100000 // PH2: Channel 4 peak detector reset (active HIGH)
+#define FIFO_RST  B10111111 // PH1: FIFO Reset, which sets both internal read and write pointers to the first location. (active LOW)
+#define FIFO_WR   B01111111 // PH0: FIFO Write Enable, which initiates a read cycle on its falling edge. (active LOW)
 
-void fifo_full_handler(){
- fifo_full_flag = true;
+
+// Peak threshhold discriminators. INT[7-4] on the ATmega2560 (inputs).
+#define DISCRIMINATOR1 9 // INT7: Channel 1 discrimintor.
+#define DISCRIMINATOR2 8 // INT6: Channel 2 discrimintor.
+#define DISCRIMINATOR3 7 // INT5: Channel 3 discrimintor.
+#define DISCRIMINATOR4 6 // INT4: Channel 4 discrimintor.
+
+
+// FIFO full flag. Pin 88 on the ATmega2560 (input).
+#define FIFO_FF 88 // PCINT17: FF output from the FIFO.
+volatile bool FIFO_full_flag = false; // Flag signifying the FIFO is completely full
+
+
+// Timestamping from GPS pulse-per-second (PPS) and real-time clock (RTC)
+unsigned long timeMs = 0; // Time in milliseconds
+//etc.
+//etc.
+//etc.
+
+
+// Front end A/D converter
+const int ADCchipSelect = 53; // Chip select for A/D converter
+uint16_t tempRaw = 0; // A/D converter's internal temp sensor
+uint8_t channel = 0; // Channel no. [1-4]
+volatile bool newEventCH1 = false; // New event flag for channel 1
+volatile bool newEventCH2 = false; // New event flag for channel 2
+volatile bool newEventCH3 = false; // New event flag for channel 3
+volatile bool newEventCH4 = false; // New event flag for channel 4
+uint16_t peakCH1 = 0; // Peak value for channel 1
+uint16_t peakCH2 = 0; // Peak value for channel 2
+uint16_t peakCH3 = 0; // Peak value for channel 3
+uint16_t peakCH4 = 0; // Peak value for channel 4
+
+
+// FIFO interrupt service routine for the FF signal
+void FIFO_FF_ISR() {
+  
+  FIFO_full_flag = true;
+  // The Full Flag (FF) will go LOW, inhibiting further write operation,
+  // when the write pointer is one location less than the read pointer,
+  // indicating that the device is full. If the read pointer is not moved
+  // after Reset (RS), the Full-Flag (FF) will go LOW after 256 writes for
+  // IDT7200, 512 writes for the IDT7201A and 1,024 writes for the IDT7202A.
+  
 }
 
+
+// Ch[1-4] interrupt service routines for threshhold discriminator signals
 void eventISR_CH1() {
 
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH1 = true;
   // Ignore new events if another event (on any channel) is currently being processed
 }
-
 void eventISR_CH2() {
 
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH2 = true;
   // Ignore new events if another event (on any channel) is currently being processed
 }
-
 void eventISR_CH3() {
 
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH3 = true;
   // Ignore new events if another event (on any channel) is currently being processed
 }
-
 void eventISR_CH4() {
 
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
@@ -81,43 +93,39 @@ void eventISR_CH4() {
   // Ignore new events if another event (on any channel) is currently being processed
 }
 
-void eventISR_FF() {
-
-  if (!FIFO_RST && !FIFO_FF)
-    FIFO_FF = true;
-  // The Full Flag (FF) will go LOW, inhibiting further write operation,
-  // when the write pointer is one location less than the read pointer,
-  // indicating that the device is full. If the read pointer is not moved
-  // after Reset (RS), the Full-Flag (FF) will go LOW after 256 writes for
-  // IDT7200, 512 writes for the IDT7201A and 1,024 writes for the IDT7202A.
-}
-
-
 
 void setup() {
-  // Set up digital outputs
-  pinMode(ADCchipSelect, OUTPUT);
-  pinMode(RESET_CH1, OUTPUT);
-  pinMode(RESET_CH2, OUTPUT);
-  pinMode(RESET_CH3, OUTPUT);
-  pinMode(RESET_CH4, OUTPUT);
-  pinMode(FULL_FLAG, OUTPUT);
-  //pinMode(pSig,OUTPUT);
   
-  // Initialize digital outputs
-  digitalWrite(ADCchipSelect, HIGH);
-  digitalWrite(RESET_CH1, LOW);
-  digitalWrite(RESET_CH2, LOW);
-  digitalWrite(RESET_CH3, LOW);
-  digitalWrite(RESET_CH4, LOW);
-  digitalWrite(FULL_FLAG, HIGH);
-  //digitalWrite(pSig,LOW);
+  // Set up Port H on the ATmega2560 as an output port. DDRH is the direction register for Port H.
+  //pinMode(ADCchipSelect, OUTPUT);
+  //pinMode(RESET_CH1, OUTPUT);
+  //pinMode(RESET_CH2, OUTPUT);
+  //pinMode(RESET_CH3, OUTPUT);
+  //pinMode(RESET_CH4, OUTPUT);
+  //pinMode(FIFO_RST,  OUTPUT);
+  //pinMode(FIFO_WR,   OUTPUT);
+  DDRH = DDRH | B11111111;
   
-  // DDRF is the direction register for Port D. The bits in this register control whether the pins in PORTF are configured as inputs or outputs so:
-  DDRF = DDRF | B11111111;  // sets ATmega2560 analog pins A0 to A7 as outputs (which is what we want for sending byte-byte data to the FIFO).
+  // Initialize the digital outputs on Port H to low. PORTH is the register for the state of the outputs.
+  //digitalWrite(ADCchipSelect, HIGH);
+  //digitalWrite(RESET_CH1, LOW);
+  //digitalWrite(RESET_CH2, LOW);
+  //digitalWrite(RESET_CH3, LOW);
+  //digitalWrite(RESET_CH4, LOW);
+  //digitalWrite(FIFO_RST,  HIGH); 
+  //digitalWrite(FIFO_WR,   HIGH);
+  PORTH = B11000010;
   
-  // PORTF is the register for the state of the outputs. So:
-  PORTF = B00000000;  // sets analog pins A[0-7] LOW.
+  
+  // Set up Port F on the ATmega2560 as an output port. DDRF is the direction register for Port F.
+  DDRF = DDRF | B11111111;
+  
+  // Initialize the digital outputs on Port F to low. PORTF is the register for the state of the outputs.
+  PORTF = B00000000;
+
+  
+  PORTH = PORTH & ~FIFO_WR;         
+  PORTH = PORTH |  FIFO_WR;
   
   // Open serial port
   Serial.begin(115200);
@@ -143,49 +151,29 @@ void setup() {
   Serial.print("channel"); Serial.print(',');
   Serial.print("timeMs");  Serial.print(',');
   Serial.print("peak"); Serial.print(','); Serial.println("temperature");
-
+  
   delay(100);
 
-  // Configure interrupts
-  attachInterrupt(IRQ_CH1, eventISR_CH1, RISING);
-  attachInterrupt(IRQ_CH2, eventISR_CH2, RISING);
-  attachInterrupt(IRQ_CH3, eventISR_CH3, RISING);
-  attachInterrupt(IRQ_CH4, eventISR_CH4, RISING);
-<<<<<<< HEAD
-  attachInterrupt(FULL_FLAG, eventISR_FF, FALLING);
-
-=======
-  attachInterrupt(FIFO_FULL_INT, fifo_full_handler, RISING);
+  // Configure interrupts for all four threshhold discriminators and the FIFO FF
+  attachInterrupt(DISCRIMINATOR1, eventISR_CH1, RISING);
+  attachInterrupt(DISCRIMINATOR2, eventISR_CH2, RISING);
+  attachInterrupt(DISCRIMINATOR3, eventISR_CH3, RISING);
+  attachInterrupt(DISCRIMINATOR4, eventISR_CH4, RISING);
+  attachInterrupt(FIFO_FF, FIFO_FF_ISR, FALLING);
   
->>>>>>> 6812f359a469206449679e93c23d6e31420cced1
-  Serial.println("=============================");
-
+  
   delay(100);
   delay(5000);
-
-  DDRH = DDRH | FIFO_RESET | FIFO_WRITE_ENABLE; // sets PH0 and PH1 as outputs for fifo_write_enable and fifo_reset  
-  DDRB = DDRB | B01000000; // sets write_enable as output
-  digitalWrite(22, HIGH); // sets read_enable high before resetting
-  digitalWrite(12, HIGH); // sets write_enable high before resetting
-  digitalWrite(13, LOW); // low active, resets fifo
-  digitalWrite(13, HIGH);
-
-//  PORTH = PORTH | FIFO_RESET;  //flash fifo_reset on and off
-//  PORTH = PORTH & ~FIFO_RESET;
+  Serial.println("=============================");
+  
 }
 
 void loop() {
 
-
-  //Serial.print("CH. 1 FLAG:"); Serial.print(newEventCH1); Serial.print(" ");
-  //Serial.print("CH. 2 FLAG:"); Serial.print(newEventCH2); Serial.print(" ");
-  //Serial.print("CH. 3 FLAG:"); Serial.print(newEventCH3); Serial.print(" ");
-  //Serial.print("CH. 4 FLAG:"); Serial.print(newEventCH4); Serial.println(" ");
-
-  if (fifo_full_flag){
-     fifo_full_flag = false; 
+  if (FIFO_full_flag) {
+     FIFO_full_flag = false;
+     // if the FF flag is set in the beginning of the loop (i.e. at boot or after a reset), unset it
   }
-
 
   if (newEventCH1) {
 
@@ -264,19 +252,6 @@ void loop() {
     Serial.println(peakCH2); Serial.println(" ");
 
     // Begin PORT7 write
-<<<<<<< HEAD
-    //digitalWrite(pSig,HIGH);
-    PORTF = (channel & 0xFF);            PORTF = B00000000; // [1st byte]
-    PORTF = (timeMs  & 0xFF);            PORTF = B00000000; // [2nd byte]
-    PORTF = (timeMs  & 0xFF00)>>8;       PORTF = B00000000; // [3rd byte]
-    PORTF = (timeMs  & 0xFF0000)>>16;    PORTF = B00000000; // [4th byte]
-    PORTF = (timeMs  & 0xFF000000)>>24;  PORTF = B00000000; // [5th byte]
-    PORTF = (peakCH2 & 0xFF);            PORTF = B00000000; // [6th byte]
-    PORTF = (peakCH2 & 0xFF00)>>8;       PORTF = B00000000; // [7th byte]
-    PORTF = (tempRaw & 0xFF);            PORTF = B00000000; // [8th byte]
-    PORTF = (tempRaw & 0xFF00)>>8;       PORTF = B00000000; // [9th byte]
-=======
-//    digitalWrite(pSig,HIGH);
 //    digitalWrite(22, LOW); // hold read_enable low
 //    digitalWrite(FIFO_WRITE_ENABLE, LOW);
 //    PORTF = (channel & 0xFF);           digitalWrite(FIFO_WRITE_ENABLE, HIGH);    digitalWrite(22, HIGH);     digitalWrite(22, LOW); digitalWrite(FIFO_WRITE_ENABLE, LOW); PORTF = B00000000; // [1st byte]
@@ -294,24 +269,23 @@ void loop() {
     PORTF = 0;
     PORTB = PORTB | FIFO_WRITE_ENABLE;
     
-    PORTF = (channel & 0xFF);  // first byte
-    PORTB = PORTB & ~FIFO_WRITE_ENABLE;// first latch                
+    PORTF = (channel & 0xFF);              //1st byte
+    PORTB = PORTB & ~FIFO_WRITE_ENABLE;    //first latch                
     PORTB = PORTB | FIFO_WRITE_ENABLE;
 
-    PORTF = (timeMs  & 0xFF);           //2nd byte    
+    PORTF = (timeMs  & 0xFF);              //2nd byte    
     PORTB = PORTB & ~FIFO_WRITE_ENABLE;       
     PORTB = PORTB | FIFO_WRITE_ENABLE;
     
-    PORTF = (timeMs  & 0xFF00)>>8;     //3rd byte    
+    PORTF = (timeMs  & 0xFF00)>>8;         //3rd byte    
     PORTB = PORTB & ~FIFO_WRITE_ENABLE;        
     PORTB = PORTB | FIFO_WRITE_ENABLE;
     
     PORTF = (timeMs  & 0xFF0000)>>16;      //4th byte
     PORTB = PORTB & ~FIFO_WRITE_ENABLE;        
     PORTB = PORTB | FIFO_WRITE_ENABLE;
->>>>>>> 6812f359a469206449679e93c23d6e31420cced1
     
-    PORTF = (timeMs  & 0xFF000000)>>24;   //5th byte    
+    PORTF = (timeMs  & 0xFF000000)>>24;    //5th byte    
     PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
     PORTB = PORTB | FIFO_WRITE_ENABLE;
         
@@ -329,11 +303,7 @@ void loop() {
 
     PORTF = (tempRaw & 0xFF00)>>8;         //9th byte
     PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
-    PORTB = PORTB | FIFO_WRITE_ENABLE;    
-
-
-    // End PORT7 write
-    //digitalWrite(pSig,LOW);
+    PORTB = PORTB | FIFO_WRITE_ENABLE;
        
     // Debugging
     Serial.println((channel & 0xFF),            BIN); // [1st byte]
