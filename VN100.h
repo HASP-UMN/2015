@@ -7,7 +7,7 @@
 
 #ifndef VN100_H_
 #define VN100_H_
-extern const char* IMU_PORT; // "/dev/ttyUSB0"             // TTY PORT TO VN100 (SET UP BY ftdi_sio KERNEL DRIVER)
+extern const char* IMU_PORT; // "/dev/ttyUSB0"                // TTY PORT TO VN100 (SET UP BY ftdi_sio KERNEL DRIVER)
 extern const char* IMU_DATAFILE; // = "IMU_VN100.txt";        // Path to file where VN100 IMU date will be recorded
 
 // Functions

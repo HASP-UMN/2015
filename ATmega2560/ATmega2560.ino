@@ -23,7 +23,7 @@
 
 // Global variables
 const int ADCchipSelect = 53;        // Chip select for A/D converter
-const int pSig = 52;                 // Data packet signifier
+//const int pSig = 52;                 // Data packet signifier
 volatile bool newEventCH1 = false;   // New event flag for MCA channel 1
 volatile bool newEventCH2 = false;   // New event flag for MCA channel 2
 volatile bool newEventCH3 = false;   // New event flag for MCA channel 3
@@ -37,8 +37,22 @@ uint16_t peakCH4 = 0;                // Peak value for MCA channel 4
 uint16_t tempRaw = 0;                // A/D converter's internal temp sensor
 uint8_t channel = 0;                 // MCA channel tag
 
+//Communication to/from FIFO
+//#define FIFO_RESET 19 //digital pin 19, PD2
+#define FIFO_RESET B00000010 // PH1
+//#define FIFO_WRITE_ENABLE 12 // PH0
+//#define FIFO_READ_ENABLE 22
+#define FIFO_WRITE_ENABLE B01000000 // PB6, the eagle schematic has pin 12 labeled as PH0 but its actually PB6
+#define FIFO_FULL_INT 4 // using external interrupt 4 which is on port PE4 (digital pin 2)
+volatile bool fifo_full_flag = false;
+
 
 // Interrupt handlers
+
+void fifo_full_handler(){
+ fifo_full_flag = true;
+}
+
 void eventISR_CH1() {
 
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
@@ -77,6 +91,7 @@ void eventISR_FF() {
   // after Reset (RS), the Full-Flag (FF) will go LOW after 256 writes for
   // IDT7200, 512 writes for the IDT7201A and 1,024 writes for the IDT7202A.
 }
+
 
 
 void setup() {
@@ -136,12 +151,27 @@ void setup() {
   attachInterrupt(IRQ_CH2, eventISR_CH2, RISING);
   attachInterrupt(IRQ_CH3, eventISR_CH3, RISING);
   attachInterrupt(IRQ_CH4, eventISR_CH4, RISING);
+<<<<<<< HEAD
   attachInterrupt(FULL_FLAG, eventISR_FF, FALLING);
 
+=======
+  attachInterrupt(FIFO_FULL_INT, fifo_full_handler, RISING);
+  
+>>>>>>> 6812f359a469206449679e93c23d6e31420cced1
   Serial.println("=============================");
 
   delay(100);
   delay(5000);
+
+  DDRH = DDRH | FIFO_RESET | FIFO_WRITE_ENABLE; // sets PH0 and PH1 as outputs for fifo_write_enable and fifo_reset  
+  DDRB = DDRB | B01000000; // sets write_enable as output
+  digitalWrite(22, HIGH); // sets read_enable high before resetting
+  digitalWrite(12, HIGH); // sets write_enable high before resetting
+  digitalWrite(13, LOW); // low active, resets fifo
+  digitalWrite(13, HIGH);
+
+//  PORTH = PORTH | FIFO_RESET;  //flash fifo_reset on and off
+//  PORTH = PORTH & ~FIFO_RESET;
 }
 
 void loop() {
@@ -151,6 +181,11 @@ void loop() {
   //Serial.print("CH. 2 FLAG:"); Serial.print(newEventCH2); Serial.print(" ");
   //Serial.print("CH. 3 FLAG:"); Serial.print(newEventCH3); Serial.print(" ");
   //Serial.print("CH. 4 FLAG:"); Serial.print(newEventCH4); Serial.println(" ");
+
+  if (fifo_full_flag){
+     fifo_full_flag = false; 
+  }
+
 
   if (newEventCH1) {
 
@@ -229,6 +264,7 @@ void loop() {
     Serial.println(peakCH2); Serial.println(" ");
 
     // Begin PORT7 write
+<<<<<<< HEAD
     //digitalWrite(pSig,HIGH);
     PORTF = (channel & 0xFF);            PORTF = B00000000; // [1st byte]
     PORTF = (timeMs  & 0xFF);            PORTF = B00000000; // [2nd byte]
@@ -239,7 +275,63 @@ void loop() {
     PORTF = (peakCH2 & 0xFF00)>>8;       PORTF = B00000000; // [7th byte]
     PORTF = (tempRaw & 0xFF);            PORTF = B00000000; // [8th byte]
     PORTF = (tempRaw & 0xFF00)>>8;       PORTF = B00000000; // [9th byte]
+=======
+//    digitalWrite(pSig,HIGH);
+//    digitalWrite(22, LOW); // hold read_enable low
+//    digitalWrite(FIFO_WRITE_ENABLE, LOW);
+//    PORTF = (channel & 0xFF);           digitalWrite(FIFO_WRITE_ENABLE, HIGH);    digitalWrite(22, HIGH);     digitalWrite(22, LOW); digitalWrite(FIFO_WRITE_ENABLE, LOW); PORTF = B00000000; // [1st byte]
+//    PORTF = (timeMs  & 0xFF);           digitalWrite(FIFO_WRITE_ENABLE, HIGH);    digitalWrite(22, HIGH);     digitalWrite(22, LOW); digitalWrite(FIFO_WRITE_ENABLE, LOW); PORTF = B00000000; // [2nd byte]
+//    PORTF = (timeMs  & 0xFF00)>>8;      digitalWrite(FIFO_WRITE_ENABLE, HIGH);    digitalWrite(22, HIGH);     digitalWrite(22, LOW); digitalWrite(FIFO_WRITE_ENABLE, LOW); PORTF = B00000000; // [3rd byte]
+//    PORTF = (timeMs  & 0xFF0000)>>16;   digitalWrite(FIFO_WRITE_ENABLE, HIGH);    digitalWrite(22, HIGH);     digitalWrite(22, LOW); digitalWrite(FIFO_WRITE_ENABLE, LOW); PORTF = B00000000; // [4th byte]
+//    PORTF = (timeMs  & 0xFF000000)>>24; digitalWrite(FIFO_WRITE_ENABLE, HIGH);    digitalWrite(22, HIGH);     digitalWrite(22, LOW); digitalWrite(FIFO_WRITE_ENABLE, LOW); PORTF = B00000000; // [5th byte]
+//    PORTF = (peakCH2 & 0xFF);           digitalWrite(FIFO_WRITE_ENABLE, HIGH);    digitalWrite(22, HIGH);     digitalWrite(22, LOW); digitalWrite(FIFO_WRITE_ENABLE, LOW); PORTF = B00000000; // [6th byte]
+//    PORTF = (peakCH2 & 0xFF00)>>8;      digitalWrite(FIFO_WRITE_ENABLE, HIGH);    digitalWrite(22, HIGH);     digitalWrite(22, LOW); digitalWrite(FIFO_WRITE_ENABLE, LOW); PORTF = B00000000; // [7th byte]
+//    PORTF = (tempRaw & 0xFF);           digitalWrite(FIFO_WRITE_ENABLE, HIGH);    digitalWrite(22, HIGH);     digitalWrite(22, LOW); digitalWrite(FIFO_WRITE_ENABLE, LOW); PORTF = B00000000; // [8th byte]
+//    PORTF = (tempRaw & 0xFF00)>>8;      digitalWrite(FIFO_WRITE_ENABLE, HIGH);    digitalWrite(22, HIGH);     digitalWrite(22, LOW); digitalWrite(FIFO_WRITE_ENABLE, LOW); PORTF = B00000000; // [9th byte]
+//    digitalWrite(22, HIGH);
+//    digitalWrite(FIFO_WRITE_ENABLE, HIGH);
+
+    PORTF = 0;
+    PORTB = PORTB | FIFO_WRITE_ENABLE;
     
+    PORTF = (channel & 0xFF);  // first byte
+    PORTB = PORTB & ~FIFO_WRITE_ENABLE;// first latch                
+    PORTB = PORTB | FIFO_WRITE_ENABLE;
+
+    PORTF = (timeMs  & 0xFF);           //2nd byte    
+    PORTB = PORTB & ~FIFO_WRITE_ENABLE;       
+    PORTB = PORTB | FIFO_WRITE_ENABLE;
+    
+    PORTF = (timeMs  & 0xFF00)>>8;     //3rd byte    
+    PORTB = PORTB & ~FIFO_WRITE_ENABLE;        
+    PORTB = PORTB | FIFO_WRITE_ENABLE;
+    
+    PORTF = (timeMs  & 0xFF0000)>>16;      //4th byte
+    PORTB = PORTB & ~FIFO_WRITE_ENABLE;        
+    PORTB = PORTB | FIFO_WRITE_ENABLE;
+>>>>>>> 6812f359a469206449679e93c23d6e31420cced1
+    
+    PORTF = (timeMs  & 0xFF000000)>>24;   //5th byte    
+    PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
+    PORTB = PORTB | FIFO_WRITE_ENABLE;
+        
+    PORTF = (peakCH2 & 0xFF);              //6th byte
+    PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
+    PORTB = PORTB | FIFO_WRITE_ENABLE;
+    
+    PORTF = (peakCH2 & 0xFF00)>>8;         //7th byte    
+    PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
+    PORTB = PORTB | FIFO_WRITE_ENABLE;
+    
+    PORTF = (tempRaw & 0xFF);              //8th byte
+    PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
+    PORTB = PORTB | FIFO_WRITE_ENABLE;
+
+    PORTF = (tempRaw & 0xFF00)>>8;         //9th byte
+    PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
+    PORTB = PORTB | FIFO_WRITE_ENABLE;    
+
+
     // End PORT7 write
     //digitalWrite(pSig,LOW);
        

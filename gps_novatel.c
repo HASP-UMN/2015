@@ -13,11 +13,13 @@
 #include "simple_gpio.h"
 #include "gps_novatel.h"
 
+#define GPS_PORT           "/dev/ttyS1"              // TTY to OEMStar GPS (Port for COM2)
+#define GPS_DATAFILE       "GPS_OEMSTAR.raw"         // Path to file where OEMStar GPS data will be recorded
+
 #define CRC32_POLYNOMIAL   0xEDB88320L
-#define GPS_MAX_MSG_SIZE 300
-#define PV_PIN 44
-#define header_length 28
-#define GPS_PORT "/dev/ttyS1"
+#define GPS_MAX_MSG_SIZE   300
+#define PV_PIN             44
+#define header_length      28
 
 unsigned char response[512];
 const char asterisk[] = "*";
@@ -25,52 +27,48 @@ const char asterisk[] = "*";
 void init_GPS(struct gps *gpsData_ptr)
 {
 
-    //uart5 configuration using termios
-    struct termios uart5;
+    // Set serial configuration using termios
+    struct termios tty;
     int fd;
 
-     //open uart5 for tx/rx, not controlling device
+    // Open GPS serial port
     if((fd = open(GPS_PORT, O_RDWR | O_NOCTTY)) < 0) {
-        fprintf(stderr,"Unable to open UART5 access.\n");
-    }
-    //get attributes of uart5
-    if(tcgetattr(fd, &uart5) < 0) {
-        fprintf(stderr,"Could not get attributes of UART5 at ttyO1\n");
-    }
-    //set Baud rate
-    if(cfsetospeed(&uart5, B115200) < 0) {
-        fprintf(stderr,"Could not set baud rate\n");
-    }
-    else {
-        fprintf(stderr,"\n\nOutput Baud rate: 115200\n");
-    }
-    if(cfsetispeed(&uart5, B115200) < 0) {
-        fprintf(stderr,"Could not set baud rate\n");
-    }
-    else {
-        fprintf(stderr,"\n\nInput Baud rate: 115200\n");
+        fprintf(stderr,"GPS ERROR - Unable to open GPS port\n");
     }
 
+    // Get attributes of GPS serial port
+    if(tcgetattr(fd, &tty) < 0) {
+        fprintf(stderr,"GPS ERROR - Could not get GPS port attributes\n");
+    }
 
+    // Set output baud rate (Output of Flight Computer)
+    if(cfsetospeed(&tty, B115200) < 0) {
+        fprintf(stderr,"GPS ERROR - Could not set output baud rate for GPS\n");
+    }
 
-    uart5.c_cflag &= ~PARENB;
-    uart5.c_cflag &= ~CSTOPB;
-    uart5.c_cflag &= ~CSIZE;
-    uart5.c_cflag |= CS8;
+    // Set input baud rate (Input of Flight Computer)
+    if(cfsetispeed(&tty, B115200) < 0) {
+        fprintf(stderr,"GPS ERROR - Could not set input baud rate for GPS\n");
+    }
 
+    // Set serial communication settings
+    tty.c_iflag = 0;
+    tty.c_oflag = 0;
+    tty.c_lflag = 0;
+    tcsetattr(fd, TCSANOW, &tty);
+    gpsData_ptr->gps_fd = fd;
 
-
-    //set attributes of uart5
-    uart5.c_iflag = 0;
-    uart5.c_oflag = 0;
-    uart5.c_lflag = 0;
-    tcsetattr(fd, TCSANOW, &uart5);
-    gpsData_ptr->port = fd;
-
-    //gpsData_ptr->navValid = 0;
+    // Reset GPS data
 	gpsData_ptr->badDataCounter = 0;
 	gpsData_ptr->posValFlag = 0;
 	gpsData_ptr->lastPosVal = 0;
+
+	// Open file to write data to
+	gpsData_ptr->GPSDataFile = fopen(GPS_DATAFILE,"a");
+	if(gpsData_ptr->GPSDataFile==NULL){
+        fprintf(stderr,"GPS ERROR - Could not open GPS data file\n");
+	}
+
 	return;
 
 }
@@ -125,38 +123,34 @@ unsigned int CalculateBlockCRC32(unsigned int ulCount, unsigned char *ucBuffer)
 
 int read_GPS(struct gps *gpsData_ptr)
 {
-    fprintf(stderr,"\n============= ENTER read_GPS() ===============\n");
+    fprintf(stderr,"\n============= ENTER read_GPS() ===============\n"); // For Debugging
 
 	unsigned int state = 0;
 	unsigned int counter = 0;
 
 	int i=0;
 	int pCount=0;
-	int bytesInLocalBuffer;
+	int bytesInGPSBuffer;
 
 	unsigned long CRC_computed;
 	unsigned long CRC_read;
 	unsigned int CRC_readstr[4];
 
-	bytesInLocalBuffer = read(gpsData_ptr->port, &response[0],512);
+	bytesInGPSBuffer = read(gpsData_ptr->gps_fd,&response[0],512);
 
-    fprintf(stderr,"GPS - Bytes to Read: %d\n", bytesInLocalBuffer);
+    fprintf(stderr,"GPS - Bytes to Read: %d\n", bytesInGPSBuffer);
 
-	//for(i=0;i<144;i++) {
-		//fprintf(stderr,"%x, ",response[i]);}
-
-	if(bytesInLocalBuffer<144)
+	if(bytesInGPSBuffer<144)
 	{
-		// Exit read_gps function in case entire message isn't read
 		return -1;
 	}
 
 	uint8_t resByte;
 
-	while(counter<bytesInLocalBuffer){
+	while(counter<bytesInGPSBuffer){
         resByte = response[counter];
         endian_swap(&resByte, 0, 8);
-        fprintf(stderr,"0x%X ",resByte);
+        fprintf(stderr,"0x%X ",resByte); // For Debugging
 		switch(state) {
 		case 0:
 			if(response[counter]==0xAA){
@@ -171,7 +165,7 @@ int read_GPS(struct gps *gpsData_ptr)
 			break;
 		case 1:
 			if(response[counter]==0x44){
-				//fprintf(stderr,"Read 0x44\n");
+				//fprintf(stderr,"Read 0x44\n"); // For Debugging
 				fprintf(stderr,"! ");
 				state++;
 				counter++;
@@ -182,7 +176,7 @@ int read_GPS(struct gps *gpsData_ptr)
 			break;
 		case 2:
 			if(response[counter]==0x12){
-				//fprintf(stderr,"Read 0x12\n");
+				//fprintf(stderr,"Read 0x12\n"); // For Debugging
 				fprintf(stderr,"! ");
 				state++;
 				//counter++;
@@ -193,7 +187,7 @@ int read_GPS(struct gps *gpsData_ptr)
 			break;
 		case 3:
 		    fprintf(stderr,"GPS Case 3\n");
-            //fprintf(stderr,"%x",response[counter]);
+            //fprintf(stderr,"%x",response[counter]); // For Debugging
 			//memcpy(gpsData_ptr->responseBuffer,&response[counter-2],144);
 
 		//	endian_swap(response,pCount,2);
@@ -226,7 +220,8 @@ int read_GPS(struct gps *gpsData_ptr)
 				return -1;
 			}
 
-			memcpy(gpsData_ptr->responseBuffer,&response[counter-2],144);
+            // Obselete
+			// memcpy(gpsData_ptr->responseBuffer,&response[counter-2],144);
 
 			if(!gpio_get_value(GPS_POS_VAL) && ((get_timestamp_ms()-gpsData_ptr->lastPosVal)>300000) && (gpsData_ptr->posValFlag == 1))
 			{
@@ -269,7 +264,7 @@ int read_GPS(struct gps *gpsData_ptr)
 			gpsData_ptr->Ze = *((double *)(&response[52]));
 
 			state = 0;
-			counter = bytesInLocalBuffer;
+			counter = bytesInGPSBuffer;
 			for(i=0;i<512;i++)
 			{
 				response[i]='\0';
@@ -277,6 +272,9 @@ int read_GPS(struct gps *gpsData_ptr)
 			break;
 		}
 	}
+
+	// Write to GPS data file
+	fwrite(&response[counter-2],144,gpsFile);
 
     fprintf(stderr,"\n============= EXIT read_GPS() ===============\n\n");
 
