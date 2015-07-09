@@ -99,13 +99,8 @@ state checkState(state SMSTATE)
         case RD_GPS:
 
             fprintf(stderr, "state = RD_GPS\n");
-
-            if (!read_GPS(&gpsData) ){
-                //GPSlogger(&gpsData, log_period);
-            }
-
+            read_GPS(&gpsData);
             gpsStamp = get_timestamp_ms();
-
             SMSTATE = IDLE;
             break;
 
@@ -147,7 +142,12 @@ int main()
 
     // Initialize GPS
 	init_GPS(&gpsData);
-	gpsData.GPSDataFile = fopen("","a");
+	//GPSDataFile = fopen("GPS_OEMSTAR.raw","a");
+//	gpsData.GPSDataFile = fopen("GPS_OEMSTAR.raw","a");
+//	if(gpsData.GPSDataFile==NULL){
+//        fprintf(stderr,"GPS - Could not open GPS data file\n");
+//	}
+	//gpsData.GPSDataFile = fopen("","a");
 
 // add init for gps and telemetry here
 	t_0 = get_timestamp_ms();
@@ -195,7 +195,7 @@ int main()
 	fclose(VN100File);
 
 	// Close GPS Data File
-	fclose(gpsData.GPSDataFile);
+//	fclose(GPSDataFile);
 
     // need to prob send a kill() to child process and then wait();
 

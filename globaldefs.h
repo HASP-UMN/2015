@@ -22,6 +22,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 
 // STRUCTURE FOR OEMSTAR DATA (BESTXYZB)
@@ -32,11 +33,11 @@ struct gps
     FILE* GPSDataFile;              // GPS file to write data to
 
     // RECEIVER CHARACTERISTICS
-    int readCalls;                  // Number of times read_gps has been called
-    int badDataCounter;             // Number of bad read from read_gps (rests after 5)
-    int posValFlag;                 // Flag signifying valid XYZ position from receiver
-    unsigned long lastPosVal;       // Last position valid
-    char responseBuffer[512];       // Character buffer for response data
+    //int readCalls;                  // Number of times read_gps has been called
+    //int badDataCounter;             // Number of bad read from read_gps (rests after 5)
+    //int posValFlag;                 // Flag signifying valid XYZ position from receiver
+    bool lastPosVal;                // Last position valid
+    //char responseBuffer[512];       // Character buffer for response data
 
     // GPS TIME (TELEMETRY PACKET BYTES 1-2)
     uint8_t timeStatus;             // Time status
@@ -45,15 +46,15 @@ struct gps
 
     // GPS ECEF X (TELEMETRY PACKET BYTES 3-9)
     double Xe;                      // X position (ECEF) [m]
-    float  P_Xe;                    // X std dev [m]                      // Is this used?????
+    //float  P_Xe;                    // X std dev [m]                      // Is this used?????
 
     // GPS ECEF Y (TELEMETRY PACKET BYTES 10-18)
     double Ye;                      // Y position (ECEF) [m]
-    float  P_Ye;                    // Y std dev [m]                      // Is this used?????
+    //float  P_Ye;                    // Y std dev [m]                      // Is this used?????
 
     // GPS ECEF Z (TELEMETRY PACKET BYTES 19-27)
     double Ze;                      // Z position (ECEF) [m]
-    float  P_Ze;                    // Z std dev [m]                      // Is this used?????
+    //float  P_Ze;                    // Z std dev [m]                      // Is this used?????
 };
 
 
