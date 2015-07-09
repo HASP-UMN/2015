@@ -11,14 +11,14 @@
 #define MANUAL_READ_ADDR 0x04 // 7-bit address for manual mode read register
 
 
-// Peak detector resets, FIFO reset, and FIFO write enable. PORTH on the ATmega2560 (outputs).
-#define ADC_CS    B11111101 // PH6: A/D converter chip select (active LOW)
-#define RESET_CH1 B00000100 // PH5: Channel 1 peak detector reset (active HIGH)
-#define RESET_CH2 B00001000 // PH4: Channel 2 peak detector reset (active HIGH)
-#define RESET_CH3 B00010000 // PH3: Channel 3 peak detector reset (active HIGH)
-#define RESET_CH4 B00100000 // PH2: Channel 4 peak detector reset (active HIGH)
-#define FIFO_RST  B10111111 // PH1: FIFO Reset, which sets both internal read and write pointers to the first location. (active LOW)
-#define FIFO_WR   B01111111 // PH0: FIFO Write Enable, which initiates a read cycle on its falling edge. (active LOW)
+// Bitmasks for: peak detector resets, FIFO reset, and FIFO write enable. PORTH on the ATmega2560 (outputs).
+#define ADC_CS    B01000000 // PH6: A/D converter chip select (active LOW)
+#define PK_RST1   B00100000 // PH5: Channel 1 peak detector reset (active HIGH)
+#define PK_RST2   B00010000 // PH4: Channel 2 peak detector reset (active HIGH)
+#define PK_RST3   B00001000 // PH3: Channel 3 peak detector reset (active HIGH)
+#define PK_RST4   B00000100 // PH2: Channel 4 peak detector reset (active HIGH)
+#define FIFO_RST  B00000010 // PH1: FIFO Reset, which sets both internal read and write pointers to the first location. (active LOW)
+#define FIFO_WR   B00000001 // PH0: FIFO Write Enable, which initiates a read cycle on its falling edge. (active LOW)
 
 
 // Peak threshhold discriminators. INT[7-4] on the ATmega2560 (inputs).
@@ -41,7 +41,7 @@ unsigned long timeMs = 0; // Time in milliseconds
 
 
 // Front end A/D converter
-const int ADCchipSelect = 53; // Chip select for A/D converter
+//const int ADCchipSelect = 53; // Chip select for A/D converter
 uint16_t tempRaw = 0; // A/D converter's internal temp sensor
 uint8_t channel = 0; // Channel no. [1-4]
 volatile bool newEventCH1 = false; // New event flag for channel 1
@@ -56,7 +56,6 @@ uint16_t peakCH4 = 0; // Peak value for channel 4
 
 // FIFO interrupt service routine for the FF signal
 void FIFO_FF_ISR() {
-  
   FIFO_full_flag = true;
   // The Full Flag (FF) will go LOW, inhibiting further write operation,
   // when the write pointer is one location less than the read pointer,
@@ -69,91 +68,32 @@ void FIFO_FF_ISR() {
 
 // Ch[1-4] interrupt service routines for threshhold discriminator signals
 void eventISR_CH1() {
-
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH1 = true;
   // Ignore new events if another event (on any channel) is currently being processed
+  
 }
 void eventISR_CH2() {
-
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH2 = true;
   // Ignore new events if another event (on any channel) is currently being processed
+  
 }
 void eventISR_CH3() {
-
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH3 = true;
   // Ignore new events if another event (on any channel) is currently being processed
+  
 }
 void eventISR_CH4() {
-
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH4 = true;
   // Ignore new events if another event (on any channel) is currently being processed
+  
 }
 
 
 void setup() {
-  
-  // Set up Port H on the ATmega2560 as an output port. DDRH is the direction register for Port H.
-  //pinMode(ADCchipSelect, OUTPUT);
-  //pinMode(RESET_CH1, OUTPUT);
-  //pinMode(RESET_CH2, OUTPUT);
-  //pinMode(RESET_CH3, OUTPUT);
-  //pinMode(RESET_CH4, OUTPUT);
-  //pinMode(FIFO_RST,  OUTPUT);
-  //pinMode(FIFO_WR,   OUTPUT);
-  DDRH = DDRH | B11111111;
-  
-  // Initialize the digital outputs on Port H to low. PORTH is the register for the state of the outputs.
-  //digitalWrite(ADCchipSelect, HIGH);
-  //digitalWrite(RESET_CH1, LOW);
-  //digitalWrite(RESET_CH2, LOW);
-  //digitalWrite(RESET_CH3, LOW);
-  //digitalWrite(RESET_CH4, LOW);
-  //digitalWrite(FIFO_RST,  HIGH); 
-  //digitalWrite(FIFO_WR,   HIGH);
-  PORTH = B11000010;
-  
-  
-  // Set up Port F on the ATmega2560 as an output port. DDRF is the direction register for Port F.
-  DDRF = DDRF | B11111111;
-  
-  // Initialize the digital outputs on Port F to low. PORTF is the register for the state of the outputs.
-  PORTF = B00000000;
-
-  
-  PORTH = PORTH & ~FIFO_WR;         
-  PORTH = PORTH |  FIFO_WR;
-  
-  // Open serial port
-  Serial.begin(115200);
-
-  // Initialize and configure SPI bus for A/D communications
-  SPI.begin();
-  SPI.setClockDivider(SPI_CLOCK_DIV2);   // 8 MHz SPI clock
-  SPI.setBitOrder(MSBFIRST);             // Most-significant bit first
-  SPI.setDataMode(SPI_MODE0);            // Clock polarity = 0, clock phase = 0
-
-  delay(100);
-
-  // Write A/D configuration register to enable internal Vref and temperature sensor
-  digitalWrite(ADCchipSelect, LOW);
-  SPI.transfer(CONFIG_ADDR << 1);        // Must shift address 1 bit left for write bit
-  SPI.transfer(ADC_CONFIG);
-  digitalWrite(ADCchipSelect, HIGH);
-
-  delay(100);
-
-  // Print data header
-  Serial.flush();
-  Serial.print("channel"); Serial.print(',');
-  Serial.print("timeMs");  Serial.print(',');
-  Serial.print("peak"); Serial.print(','); Serial.println("temperature");
-  
-  delay(100);
-
   // Configure interrupts for all four threshhold discriminators and the FIFO FF
   attachInterrupt(DISCRIMINATOR1, eventISR_CH1, RISING);
   attachInterrupt(DISCRIMINATOR2, eventISR_CH2, RISING);
@@ -162,6 +102,72 @@ void setup() {
   attachInterrupt(FIFO_FF, FIFO_FF_ISR, FALLING);
   
   
+  // Set up Port H on the ATmega2560 as an output port. DDRH is the direction register for Port H.
+  //pinMode(ADC_CS,   OUTPUT);
+  //pinMode(PK_RST1,  OUTPUT);
+  //pinMode(PK_RST2,  OUTPUT);
+  //pinMode(PK_RST3,  OUTPUT);
+  //pinMode(PK_RST4,  OUTPUT);
+  //pinMode(FIFO_RST, OUTPUT);
+  //pinMode(FIFO_WR,  OUTPUT);
+  DDRH = DDRH | B01111111;
+  
+  
+  // Initialize the digital outputs on Port H to low. PORTH is the register for the state of the outputs.
+  //digitalWrite(ADC_CS,   HIGH);
+  //digitalWrite(PK_RST1,  LOW);
+  //digitalWrite(PK_RST1,  LOW);
+  //digitalWrite(PK_RST1,  LOW);
+  //digitalWrite(PK_RST1,  LOW);
+  //digitalWrite(FIFO_RST, HIGH); 
+  //digitalWrite(FIFO_WR,  HIGH);
+  PORTH = B01000011;
+  
+  
+  // Set up Port F on the ATmega2560 as an output port.DDRF is the direction register for Port F.
+  DDRF = DDRF | B11111111;
+
+
+  // Initialize the digital outputs on Port F to low.PORTF is the register for the state of the outputs.
+  PORTF = B00000000;
+
+
+  // Reset the FIFO.
+  PORTH = PORTH & ~FIFO_RST; // Toggle FIFO_RST pin from HIGH to LOW
+  PORTH = PORTH |  FIFO_RST; // Toggle FIFO_RST pin from LOW to HIGH
+  
+  
+  // Open serial port
+  Serial.begin(115200);
+
+
+  // Initialize and configure SPI bus for A/D communications
+  SPI.begin();
+  SPI.setClockDivider(SPI_CLOCK_DIV2);   // 8 MHz SPI clock
+  SPI.setBitOrder(MSBFIRST);             // Most-significant bit first
+  SPI.setDataMode(SPI_MODE0);            // Clock polarity = 0, clock phase = 0
+
+
+  delay(100);
+
+
+  // Write A/D configuration register to enable internal Vref and temperature sensor
+  digitalWrite(ADCchipSelect, LOW);
+  SPI.transfer(CONFIG_ADDR << 1); // Must shift address 1 bit left for write bit
+  SPI.transfer(ADC_CONFIG);
+  digitalWrite(ADCchipSelect, HIGH);
+
+
+  delay(100);
+
+
+  // Print data header
+  Serial.flush();
+  Serial.print("channel"); Serial.print(',');
+  Serial.print("timeMs");  Serial.print(',');
+  Serial.print("peak");    Serial.print(',');
+  Serial.println("temperature");
+   
   delay(100);
   delay(5000);
   Serial.println("=============================");
@@ -169,14 +175,15 @@ void setup() {
 }
 
 void loop() {
-
+  
   if (FIFO_full_flag) {
      FIFO_full_flag = false;
      // if the FF flag is set in the beginning of the loop (i.e. at boot or after a reset), unset it
+  
   }
 
-  if (newEventCH1) {
 
+  if (newEventCH1) {
     timeMs = millis();  // Get timestamp in milliseconds
 
     // Issue A/D command to read MCA channel 1 peak value
@@ -209,102 +216,154 @@ void loop() {
 
     peakCH1 = 0;
     newEventCH1 = false;
+    
+
   }
 
-  if (newEventCH2) {
 
+  if (newEventCH2) {
+    
     timeMs = millis();  // Get timestamp in milliseconds
     channel = 2;        // Assign channel number
 
+
     // Read channel 2
-    digitalWrite(ADCchipSelect, LOW);
+    //digitalWrite(ADCchipSelect, LOW);
+    //SPI.transfer(MANUAL_READ_ADDR << 1);
+    //SPI.transfer(READ_CH2);
+    //digitalWrite(ADCchipSelect, HIGH);
+    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
+    delayMicroseconds(5);
     SPI.transfer(MANUAL_READ_ADDR << 1);
     SPI.transfer(READ_CH2);
-    digitalWrite(ADCchipSelect, HIGH);
+    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
+    
     
     // Read temp sensor
-    digitalWrite(ADCchipSelect, LOW);
+    //digitalWrite(ADCchipSelect, LOW);
+    //SPI.transfer(MANUAL_READ_ADDR << 1);
+    //SPI.transfer(READ_TEMP);
+    //digitalWrite(ADCchipSelect, HIGH);
+    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
+    delayMicroseconds(5);
     SPI.transfer(MANUAL_READ_ADDR << 1);
-    SPI.transfer(READ_TEMP);
-    digitalWrite(ADCchipSelect, HIGH);
+    SPI.transfer(READ_TEMP)
+    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
+
 
     // Get channel 2 data
-    digitalWrite(ADCchipSelect, LOW);
+    //digitalWrite(ADCchipSelect, LOW);
+    //peakCH2 = SPI.transfer(0) & 0x0F;
+    //peakCH2 = peakCH2 << 8;
+    //peakCH2 += SPI.transfer(0);
+    //digitalWrite(ADCchipSelect, HIGH);
+    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
+    delayMicroseconds(5);
     peakCH2 = SPI.transfer(0) & 0x0F;
     peakCH2 = peakCH2 << 8;
     peakCH2 += SPI.transfer(0);
-    digitalWrite(ADCchipSelect, HIGH);
+    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
+
     
     // Get temp sensor data
-    digitalWrite(ADCchipSelect, LOW);
+    //digitalWrite(ADCchipSelect, LOW);
+    //tempRaw = SPI.transfer(0) & 0x0F;
+    //tempRaw = tempRaw << 8;
+    //tempRaw += SPI.transfer(0);
+    //digitalWrite(ADCchipSelect, HIGH);
+    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
+    delayMicroseconds(5);
     tempRaw = SPI.transfer(0) & 0x0F;
     tempRaw = tempRaw << 8;
     tempRaw += SPI.transfer(0);
-    digitalWrite(ADCchipSelect, HIGH);
+    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
 
-    // Reset peak detector
-    digitalWrite(RESET_CH2, HIGH);
+
+    // Reset the peak detector. PH4 (the 5th bit of Port H) is the CH2 reset signal.
+    //digitalWrite(RESET_CH2, HIGH);
+    //delayMicroseconds(5);
+    //digitalWrite(RESET_CH2, LOW);
+    PORTH = PORTH | PK_RST2; // Toggle PK_RST2 HIGH
     delayMicroseconds(5);
-    digitalWrite(RESET_CH2, LOW);
-
+    PORTH = PORTH & ~PK_RST2; // Toggle PK_RST2 LOW
+    
+    
     Serial.print("2");    Serial.print(',');
     Serial.print(timeMs); Serial.print(',');
     Serial.println(peakCH2); Serial.println(" ");
 
-    // Begin PORT7 write
-//    digitalWrite(22, LOW); // hold read_enable low
-//    digitalWrite(FIFO_WRITE_ENABLE, LOW);
-//    PORTF = (channel & 0xFF);           digitalWrite(FIFO_WRITE_ENABLE, HIGH);    digitalWrite(22, HIGH);     digitalWrite(22, LOW); digitalWrite(FIFO_WRITE_ENABLE, LOW); PORTF = B00000000; // [1st byte]
-//    PORTF = (timeMs  & 0xFF);           digitalWrite(FIFO_WRITE_ENABLE, HIGH);    digitalWrite(22, HIGH);     digitalWrite(22, LOW); digitalWrite(FIFO_WRITE_ENABLE, LOW); PORTF = B00000000; // [2nd byte]
-//    PORTF = (timeMs  & 0xFF00)>>8;      digitalWrite(FIFO_WRITE_ENABLE, HIGH);    digitalWrite(22, HIGH);     digitalWrite(22, LOW); digitalWrite(FIFO_WRITE_ENABLE, LOW); PORTF = B00000000; // [3rd byte]
-//    PORTF = (timeMs  & 0xFF0000)>>16;   digitalWrite(FIFO_WRITE_ENABLE, HIGH);    digitalWrite(22, HIGH);     digitalWrite(22, LOW); digitalWrite(FIFO_WRITE_ENABLE, LOW); PORTF = B00000000; // [4th byte]
-//    PORTF = (timeMs  & 0xFF000000)>>24; digitalWrite(FIFO_WRITE_ENABLE, HIGH);    digitalWrite(22, HIGH);     digitalWrite(22, LOW); digitalWrite(FIFO_WRITE_ENABLE, LOW); PORTF = B00000000; // [5th byte]
-//    PORTF = (peakCH2 & 0xFF);           digitalWrite(FIFO_WRITE_ENABLE, HIGH);    digitalWrite(22, HIGH);     digitalWrite(22, LOW); digitalWrite(FIFO_WRITE_ENABLE, LOW); PORTF = B00000000; // [6th byte]
-//    PORTF = (peakCH2 & 0xFF00)>>8;      digitalWrite(FIFO_WRITE_ENABLE, HIGH);    digitalWrite(22, HIGH);     digitalWrite(22, LOW); digitalWrite(FIFO_WRITE_ENABLE, LOW); PORTF = B00000000; // [7th byte]
-//    PORTF = (tempRaw & 0xFF);           digitalWrite(FIFO_WRITE_ENABLE, HIGH);    digitalWrite(22, HIGH);     digitalWrite(22, LOW); digitalWrite(FIFO_WRITE_ENABLE, LOW); PORTF = B00000000; // [8th byte]
-//    PORTF = (tempRaw & 0xFF00)>>8;      digitalWrite(FIFO_WRITE_ENABLE, HIGH);    digitalWrite(22, HIGH);     digitalWrite(22, LOW); digitalWrite(FIFO_WRITE_ENABLE, LOW); PORTF = B00000000; // [9th byte]
-//    digitalWrite(22, HIGH);
-//    digitalWrite(FIFO_WRITE_ENABLE, HIGH);
 
-    PORTF = 0;
-    PORTB = PORTB | FIFO_WRITE_ENABLE;
-    
-    PORTF = (channel & 0xFF);              //1st byte
-    PORTB = PORTB & ~FIFO_WRITE_ENABLE;    //first latch                
-    PORTB = PORTB | FIFO_WRITE_ENABLE;
+    //PORTF = (channel & 0xFF);              //1st byte
+    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;    //first latch                
+    //PORTB = PORTB | FIFO_WRITE_ENABLE;
+    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
+    PORTF = (channel & 0xFF); // Present byte 1 to Port F
+    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
 
-    PORTF = (timeMs  & 0xFF);              //2nd byte    
-    PORTB = PORTB & ~FIFO_WRITE_ENABLE;       
-    PORTB = PORTB | FIFO_WRITE_ENABLE;
-    
-    PORTF = (timeMs  & 0xFF00)>>8;         //3rd byte    
-    PORTB = PORTB & ~FIFO_WRITE_ENABLE;        
-    PORTB = PORTB | FIFO_WRITE_ENABLE;
-    
-    PORTF = (timeMs  & 0xFF0000)>>16;      //4th byte
-    PORTB = PORTB & ~FIFO_WRITE_ENABLE;        
-    PORTB = PORTB | FIFO_WRITE_ENABLE;
-    
-    PORTF = (timeMs  & 0xFF000000)>>24;    //5th byte    
-    PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
-    PORTB = PORTB | FIFO_WRITE_ENABLE;
-        
-    PORTF = (peakCH2 & 0xFF);              //6th byte
-    PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
-    PORTB = PORTB | FIFO_WRITE_ENABLE;
-    
-    PORTF = (peakCH2 & 0xFF00)>>8;         //7th byte    
-    PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
-    PORTB = PORTB | FIFO_WRITE_ENABLE;
-    
-    PORTF = (tempRaw & 0xFF);              //8th byte
-    PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
-    PORTB = PORTB | FIFO_WRITE_ENABLE;
 
-    PORTF = (tempRaw & 0xFF00)>>8;         //9th byte
-    PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
-    PORTB = PORTB | FIFO_WRITE_ENABLE;
-       
+    //PORTF = (timeMs  & 0xFF);              //2nd byte    
+    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;       
+    //PORTB = PORTB | FIFO_WRITE_ENABLE;
+    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
+    PORTF = (timeMs  & 0xFF); // Present byte 2 to Port F
+    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
+
+    
+    //PORTF = (timeMs  & 0xFF00)>>8;         //3rd byte    
+    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;        
+    //PORTB = PORTB | FIFO_WRITE_ENABLE;
+    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
+    PORTF = (timeMs  & 0xFF00)>>8; // Present byte 3 to Port F
+    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
+
+
+    //PORTF = (timeMs  & 0xFF0000)>>16;      //4th byte
+    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;        
+    //PORTB = PORTB | FIFO_WRITE_ENABLE;
+    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
+    PORTF = (timeMs  & 0xFF0000)>>16; // Present byte 4 to Port F
+    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
+
+    
+    //PORTF = (timeMs  & 0xFF000000)>>24;    //5th byte    
+    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
+    //PORTB = PORTB | FIFO_WRITE_ENABLE;
+    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
+    PORTF = (timeMs  & 0xFF000000)>>24; // Present byte 5 to Port F
+    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
+
+    
+    //PORTF = (peakCH2 & 0xFF);              //6th byte
+    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
+    //PORTB = PORTB | FIFO_WRITE_ENABLE;
+    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
+    PORTF = (peakCH2 & 0xFF); // Present byte 6 to Port F
+    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
+
+    
+    //PORTF = (peakCH2 & 0xFF00)>>8;         //7th byte    
+    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
+    //PORTB = PORTB | FIFO_WRITE_ENABLE;
+    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
+    PORTF = (peakCH2 & 0xFF00)>>8; // Present byte 7 to Port F
+    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
+    
+    //PORTF = (tempRaw & 0xFF);              //8th byte
+    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
+    //PORTB = PORTB | FIFO_WRITE_ENABLE;
+    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
+    PORTF = (tempRaw & 0xFF); // Present byte 8 to Port F
+    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
+    
+    
+    //PORTF = (tempRaw & 0xFF00)>>8;         //9th byte
+    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
+    //PORTB = PORTB | FIFO_WRITE_ENABLE;
+    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
+    PORTF = (tempRaw & 0xFF00)>>8; // Present byte 9 to Port F
+    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
+
+    
     // Debugging
     Serial.println((channel & 0xFF),            BIN); // [1st byte]
     Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
