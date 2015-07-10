@@ -11,8 +11,21 @@
 #include <math.h>
 
 #include "globaldefs.h"
-#include "simple_gpio.h"
 #include "gps_novatel.h"
+#include "errorword.h"
+
+
+/*
+
+    Important Resources for working with the NovAtel OEMStar GPS
+    OEMStar Firmware Reference Manual:
+    -- Binary Message Response Structure.... p. 25
+    -- Time Status Specification............ p. 27
+    -- BESTXYZ Log Specification............ p. 207
+    -- Receiver Status Word Specification... p. 350
+
+*/
+
 
 #define GPS_PORT           "/dev/ttyUSB1"            // TTY to OEMStar GPS (Port for COM2)
 #define GPS_DATAFILE       "GPS_OEMSTAR.raw"         // Path to file where OEMStar GPS data will be recorded
@@ -21,10 +34,9 @@
 
 #define VALID_POS_OVERRIDE 1
 
-unsigned char response[512];
-const char asterisk[] = "*";
 
-FILE* GPSDataFile; // This must be located in this file and not in main.c in order for the GPS data to be saved.
+unsigned char response[512];
+FILE* GPSDataFile;  // This must be located in this file and not in main.c in order for the GPS data to be saved.
 
 
 void init_GPS(struct gps *gpsData_ptr)
@@ -58,7 +70,13 @@ void init_GPS(struct gps *gpsData_ptr)
     tty.c_iflag = 0;
     tty.c_oflag = 0;
     tty.c_lflag = 0;
-    tcsetattr(fd, TCSANOW, &tty);
+
+
+    if(tcsetattr(fd, TCSANOW, &tty) < 0) {
+        fprintf(stderr,"GPS ERROR - Could not set port attributes\n");
+    }
+
+
     gpsData_ptr->gps_fd = fd;
 
 	return;
@@ -141,10 +159,16 @@ void read_GPS(struct gps *gpsData_ptr)
 
 	bytesInGPSBuffer = read(gpsData_ptr->gps_fd,&response[0],512);
 
-    fprintf(stderr,"GPS - Bytes to Read: %d\n", bytesInGPSBuffer);
+    fprintf(stderr,"GPS - Bytes to Read: %d\n", bytesInGPSBuffer); // For Debugging
 
 	if(bytesInGPSBuffer<144)
 	{
+	    if(bytesInGPSBuffer==-1){
+            fprintf(stderr,"GPS ERROR - Bad read");
+	    }
+	    else{
+           fprintf(stderr,"GPS ERROR - Not enough bytes\n");
+	    }
 		return;
 	}
 
@@ -219,18 +243,58 @@ void read_GPS(struct gps *gpsData_ptr)
             posValid = !GetBitMask(response,20 + pCount,19);
             gpsData_ptr->lastPosVal = posValid;
 
-            fprintf(stderr,"GPS - RSM - Error Flag Raised..........: %d\n",GetBitMask(response,20 + pCount,0));
-            fprintf(stderr,"GPS - RSM - Temperature Warning........: %d\n",GetBitMask(response,20 + pCount,1));
-            fprintf(stderr,"GPS - RSM - Voltage Supply Warning.....: %d\n",GetBitMask(response,20 + pCount,2));
-            fprintf(stderr,"GPS - RSM - Antenna Shorted............: %d\n",GetBitMask(response,20 + pCount,6));
-            fprintf(stderr,"GPS - RSM - CPU Overloaded.............: %d\n",GetBitMask(response,20 + pCount,7));
-            fprintf(stderr,"GPS - RSM - COM1 Buffer Overrun........: %d\n",GetBitMask(response,20 + pCount,8));
-            fprintf(stderr,"GPS - RSM - Auto Gain Control Warning 1: %d\n",GetBitMask(response,20 + pCount,15));
-            fprintf(stderr,"GPS - RSM - Auto Gain Control Warning 2: %d\n",GetBitMask(response,20 + pCount,17));
-            fprintf(stderr,"GPS - RSM - Almanac/UTC Invalid........: %d\n",GetBitMask(response,20 + pCount,18));
-            fprintf(stderr,"GPS - RSM - No Position Solution.......: %d\n",!posValid);
-            fprintf(stderr,"GPS - RSM - Clock Model Invalid........: %d\n",GetBitMask(response,20 + pCount,22));
-            fprintf(stderr,"GPS - RSM - Software Resource Warning..: %d\n",GetBitMask(response,20 + pCount,24));
+            if(GetBitMask(response,20 + pCount,0)){
+                fprintf(stderr,"GPS ERROR - RSM - Error flag raised\n");
+            }
+            if(GetBitMask(response,20 + pCount,1)){
+                fprintf(stderr,"GPS ERROR - RSM - Temperature warning\n");
+            }
+            if(GetBitMask(response,20 + pCount,2)){
+                fprintf(stderr,"GPS ERROR - RSM - Voltage supply warning\n");
+            }
+            if(GetBitMask(response,20 + pCount,6)){
+                fprintf(stderr,"GPS ERROR - RSM - Antenna shorted\n");
+            }
+            if(GetBitMask(response,20 + pCount,7)){
+                fprintf(stderr,"GPS ERROR - RSM - CPU overloaded\n");
+            }
+            if(GetBitMask(response,20 + pCount,8)){
+                fprintf(stderr,"GPS ERROR - RSM - COM1 buffer overrun\n");
+            }
+            if(GetBitMask(response,20 + pCount,15)){
+                fprintf(stderr,"GPS ERROR - RSM - Auto Gain Control Warning 1\n");
+            }
+            if(GetBitMask(response,20 + pCount,17)){
+                fprintf(stderr,"GPS ERROR - RSM - Auto Gain Control Warning 2\n");
+            }
+            if(GetBitMask(response,20 + pCount,18)){
+                reportError(ERR_GPS_RSMALM);
+                //fprintf(stderr,"GPS ERROR - RSM - Almanac/UTC invalid\n");
+            }
+            if(!posValid){
+                reportError(ERR_GPS_RSMPOS);
+                //fprintf(stderr,"GPS ERROR - RSM - No position solution\n");
+            }
+            if(GetBitMask(response,20 + pCount,22)){
+                reportError(ERR_GPS_RSMCLO);
+                //fprintf(stderr,"GPS ERROR - RSM - Clock model invalid\n");
+            }
+            if(GetBitMask(response,20 + pCount,24)){
+                fprintf(stderr,"GPS ERROR - RSM - Software resource warning\n");
+            }
+
+//            fprintf(stderr,"GPS - RSM - Error Flag Raised..........: %d\n",GetBitMask(response,20 + pCount,0));
+//            fprintf(stderr,"GPS - RSM - Temperature Warning........: %d\n",GetBitMask(response,20 + pCount,1));
+//            fprintf(stderr,"GPS - RSM - Voltage Supply Warning.....: %d\n",GetBitMask(response,20 + pCount,2));
+//            fprintf(stderr,"GPS - RSM - Antenna Shorted............: %d\n",GetBitMask(response,20 + pCount,6));
+//            fprintf(stderr,"GPS - RSM - CPU Overloaded.............: %d\n",GetBitMask(response,20 + pCount,7));
+//            fprintf(stderr,"GPS - RSM - COM1 Buffer Overrun........: %d\n",GetBitMask(response,20 + pCount,8));
+//            fprintf(stderr,"GPS - RSM - Auto Gain Control Warning 1: %d\n",GetBitMask(response,20 + pCount,15));
+//            fprintf(stderr,"GPS - RSM - Auto Gain Control Warning 2: %d\n",GetBitMask(response,20 + pCount,17));
+//            fprintf(stderr,"GPS - RSM - Almanac/UTC Invalid........: %d\n",GetBitMask(response,20 + pCount,18));
+//            fprintf(stderr,"GPS - RSM - No Position Solution.......: %d\n",!posValid);
+//            fprintf(stderr,"GPS - RSM - Clock Model Invalid........: %d\n",GetBitMask(response,20 + pCount,22));
+//            fprintf(stderr,"GPS - RSM - Software Resource Warning..: %d\n",GetBitMask(response,20 + pCount,24));
 
 
 
@@ -240,7 +304,7 @@ void read_GPS(struct gps *gpsData_ptr)
                 gpsData_ptr->Ye = 0;
                 gpsData_ptr->Ze = 0;
                 // Report Error
-                fprintf(stderr,"GPS - ERROR - Position not valid");
+                fprintf(stderr,"GPS - ERROR - Position not valid\n");
                 return;
 			}
 

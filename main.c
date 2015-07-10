@@ -25,6 +25,7 @@
 //#include "timing.h"
 #include "VN100.h"
 #include "gps_novatel.h"
+#include "errorword.h"
 
 //Data structures
 struct imu imuData;
@@ -107,6 +108,9 @@ state checkState(state SMSTATE)
         case DOWNLINK:
 
             fprintf(stderr, "state = DOWNLINK\n");
+            fprintf(stderr,"\n+++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
+            fprintf(stderr,"TELEMETRY ERROR WORD:  %d\n", getErrorWord());
+            fprintf(stderr,"+++++++++++++++++++++++++++++++++++++++++++++++++++++\n\n");
 	    //send_telemetry(&sensorData);
             telStamp = get_timestamp_ms();
 

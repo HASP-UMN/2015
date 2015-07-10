@@ -66,7 +66,7 @@ int init_vn100(){
 
 
 // Calculates Checksum from VN100 output. See VN100 User Manual for more information.
-    unsigned char calculateChecksum(char* command, size_t length){
+unsigned char calculateChecksum(char* command, size_t length){
     int idx;
     unsigned char xor = 0;
     for (idx = 1; idx < length-5; idx++){
