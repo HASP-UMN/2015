@@ -1,3 +1,9 @@
+// ***** HASP UNIVERISTY OF MINNESOTA 2015 *****
+// gps_novatel.c
+// This file reads from the NovAtel OEMStar GPS Receiver.
+// Last Edited By: Luke Granlund
+// Last Edited On: 13 July 2015, 13:00
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
@@ -27,11 +33,9 @@
 */
 
 
-#define GPS_PORT           "/dev/ttyUSB1"            // TTY to OEMStar GPS (Port for COM2)
+#define GPS_PORT           "/dev/ttyUSB1"            // TTY to OEMStar GPS (Port for second USB port)
 #define GPS_DATAFILE       "GPS_OEMSTAR.raw"         // Path to file where OEMStar GPS data will be recorded
-
 #define CRC32_POLYNOMIAL   0xEDB88320L
-
 #define VALID_POS_OVERRIDE 1
 
 
@@ -48,22 +52,26 @@ void init_GPS(struct gps *gpsData_ptr)
 
     // Open GPS serial port
     if((fd = open(GPS_PORT, O_RDWR | O_NOCTTY)) < 0) {
-        fprintf(stderr,"GPS ERROR - Unable to open GPS port\n");
+        reportError(ERR_GPS_PORTOPEN);
+        //fprintf(stderr,"GPS ERROR - Unable to open GPS port\n");
     }
 
     // Get attributes of GPS serial port
     if(tcgetattr(fd, &tty) < 0) {
-        fprintf(stderr,"GPS ERROR - Could not get GPS port attributes\n");
+        reportError(ERR_GPS_PORTGATT);
+        //fprintf(stderr,"GPS ERROR - Could not get GPS port attributes\n");
     }
 
     // Set output baud rate (Output of Flight Computer)
     if(cfsetospeed(&tty, B115200) < 0) {
-        fprintf(stderr,"GPS ERROR - Could not set output baud rate for GPS\n");
+        reportError(ERR_GPS_PORTOBR);
+        //fprintf(stderr,"GPS ERROR - Could not set output baud rate for GPS\n");
     }
 
     // Set input baud rate (Input of Flight Computer)
     if(cfsetispeed(&tty, B115200) < 0) {
-        fprintf(stderr,"GPS ERROR - Could not set input baud rate for GPS\n");
+        reportError(ERR_GPS_PORTIBR);
+        //fprintf(stderr,"GPS ERROR - Could not set input baud rate for GPS\n");
     }
 
     // Set serial communication settings
@@ -73,7 +81,8 @@ void init_GPS(struct gps *gpsData_ptr)
 
 
     if(tcsetattr(fd, TCSANOW, &tty) < 0) {
-        fprintf(stderr,"GPS ERROR - Could not set port attributes\n");
+        reportError(ERR_GPS_PORTSATT);
+        //fprintf(stderr,"GPS ERROR - Could not set port attributes\n");
     }
 
 
@@ -82,19 +91,6 @@ void init_GPS(struct gps *gpsData_ptr)
 	return;
 }
 
-// Not Used
-//void endian_swap(uint8_t *buf, int index, int count)
-//{
-//	int i;
-//	uint8_t tmp;
-//
-//	for (i=0;i<(count/2);i++) {
-//		tmp = buf[index+i];
-//		buf[index+i] = buf[index+count-i-1];
-//		buf[index+count-i-1] = tmp;
-//	}
-//	return;
-//}
 
 unsigned int CRC32Value(int i)
 {
@@ -130,6 +126,8 @@ unsigned int CalculateBlockCRC32(unsigned int ulCount, unsigned char *ucBuffer)
 }
 
 
+// Gets a specific bit from a set of bytes.
+// Used for reading the Receiver Status Mask.
 bool GetBitMask(unsigned char *bits, int startingByte, uint8_t bitMask)
 {
     while(bitMask > 7)
@@ -148,7 +146,6 @@ void read_GPS(struct gps *gpsData_ptr)
 	unsigned int state = 0;
 	unsigned int counter = 0;
 
-
 	int pCount=0;
 	int bytesInGPSBuffer;
 	bool posValid = false;
@@ -158,26 +155,23 @@ void read_GPS(struct gps *gpsData_ptr)
 	unsigned int CRC_readstr[4];
 
 	bytesInGPSBuffer = read(gpsData_ptr->gps_fd,&response[0],512);
-
     fprintf(stderr,"GPS - Bytes to Read: %d\n", bytesInGPSBuffer); // For Debugging
-
 	if(bytesInGPSBuffer<144)
 	{
 	    if(bytesInGPSBuffer==-1){
-            fprintf(stderr,"GPS ERROR - Bad read");
+            reportError(ERR_GPS_READ);
+            //fprintf(stderr,"GPS ERROR - Bad read");
 	    }
 	    else{
-           fprintf(stderr,"GPS ERROR - Not enough bytes\n");
+            reportError(ERR_GPS_READBYTES);
+            //fprintf(stderr,"GPS ERROR - Not enough bytes\n");
 	    }
 		return;
 	}
 
-
 	while(counter<bytesInGPSBuffer){
-
         //fprintf(stderr,"0x%X ",resByte); // For Debugging
-
-		switch(state) {
+        switch(state) {
 		case 0:
 			if(response[counter]==0xAA){
 				state++;
@@ -199,7 +193,7 @@ void read_GPS(struct gps *gpsData_ptr)
 		case 2:
 			if(response[counter]==0x12){
 				state++;
-                fprintf(stderr,"GPS - Found Sync\n");
+                fprintf(stderr,"GPS - Found Sync\n");  // For Debugging
 			}
 			else{
 				state = 0;
@@ -211,8 +205,8 @@ void read_GPS(struct gps *gpsData_ptr)
 
 		    // Check to see if an entire packet can fit between the starting point and the end of the buffer.
 		    if(bytesInGPSBuffer - pCount < 144){
-                // Report Error
-                fprintf(stderr, "GPS - ERROR - Partial Packet\n");
+                reportError(ERR_GPS_READPACK);
+                //fprintf(stderr, "GPS - ERROR - Partial Packet\n");
                 return;
 		    }
 
@@ -231,6 +225,7 @@ void read_GPS(struct gps *gpsData_ptr)
 			gpsData_ptr->time = *((long *)(&response[16]));
 
 
+            // Obsolete - Possibly
 			// Set system time from GPS if it is good
             //if(gpsData_ptr->timeStatus == 80 || gpsData_ptr->timeStatus == 100 || gpsData_ptr->timeStatus == 120 ||gpsData_ptr->timeStatus == 140 || gpsData_ptr->timeStatus == 160 || gpsData_ptr->timeStatus == 170 || gpsData_ptr->timeStatus == 180)
 			//{
@@ -244,28 +239,36 @@ void read_GPS(struct gps *gpsData_ptr)
             gpsData_ptr->lastPosVal = posValid;
 
             if(GetBitMask(response,20 + pCount,0)){
-                fprintf(stderr,"GPS ERROR - RSM - Error flag raised\n");
+                reportError(ERR_GPS_RSMEFR);
+                //fprintf(stderr,"GPS ERROR - RSM - Error flag raised\n");
             }
             if(GetBitMask(response,20 + pCount,1)){
-                fprintf(stderr,"GPS ERROR - RSM - Temperature warning\n");
+                reportError(ERR_GPS_RSMTEMP);
+                //fprintf(stderr,"GPS ERROR - RSM - Temperature warning\n");
             }
             if(GetBitMask(response,20 + pCount,2)){
-                fprintf(stderr,"GPS ERROR - RSM - Voltage supply warning\n");
+                reportError(ERR_GPS_RSMVOLT);
+                //fprintf(stderr,"GPS ERROR - RSM - Voltage supply warning\n");
             }
             if(GetBitMask(response,20 + pCount,6)){
-                fprintf(stderr,"GPS ERROR - RSM - Antenna shorted\n");
+                reportError(ERR_GPS_RSMANT);
+                //fprintf(stderr,"GPS ERROR - RSM - Antenna shorted\n");
             }
             if(GetBitMask(response,20 + pCount,7)){
-                fprintf(stderr,"GPS ERROR - RSM - CPU overloaded\n");
+                reportError(ERR_GPS_RSMCPU);
+                //fprintf(stderr,"GPS ERROR - RSM - CPU overloaded\n");
             }
             if(GetBitMask(response,20 + pCount,8)){
-                fprintf(stderr,"GPS ERROR - RSM - COM1 buffer overrun\n");
+                reportError(ERR_GPS_RSMCOM);
+                //fprintf(stderr,"GPS ERROR - RSM - COM1 buffer overrun\n");
             }
             if(GetBitMask(response,20 + pCount,15)){
-                fprintf(stderr,"GPS ERROR - RSM - Auto Gain Control Warning 1\n");
+                reportError(ERR_GPS_RSMAGC);
+                //fprintf(stderr,"GPS ERROR - RSM - Auto Gain Control Warning 1\n");
             }
             if(GetBitMask(response,20 + pCount,17)){
-                fprintf(stderr,"GPS ERROR - RSM - Auto Gain Control Warning 2\n");
+                reportError(ERR_GPS_RSMAGC);
+                //fprintf(stderr,"GPS ERROR - RSM - Auto Gain Control Warning 2\n");
             }
             if(GetBitMask(response,20 + pCount,18)){
                 reportError(ERR_GPS_RSMALM);
@@ -280,9 +283,11 @@ void read_GPS(struct gps *gpsData_ptr)
                 //fprintf(stderr,"GPS ERROR - RSM - Clock model invalid\n");
             }
             if(GetBitMask(response,20 + pCount,24)){
-                fprintf(stderr,"GPS ERROR - RSM - Software resource warning\n");
+                reportError(ERR_GPS_RSMSRW);
+                //fprintf(stderr,"GPS ERROR - RSM - Software resource warning\n");
             }
 
+            // For Debugging: Shows current receiver status word
 //            fprintf(stderr,"GPS - RSM - Error Flag Raised..........: %d\n",GetBitMask(response,20 + pCount,0));
 //            fprintf(stderr,"GPS - RSM - Temperature Warning........: %d\n",GetBitMask(response,20 + pCount,1));
 //            fprintf(stderr,"GPS - RSM - Voltage Supply Warning.....: %d\n",GetBitMask(response,20 + pCount,2));
@@ -303,8 +308,9 @@ void read_GPS(struct gps *gpsData_ptr)
                 gpsData_ptr->Xe = 0;
                 gpsData_ptr->Ye = 0;
                 gpsData_ptr->Ze = 0;
-                // Report Error
-                fprintf(stderr,"GPS - ERROR - Position not valid\n");
+                //fprintf(stderr,"GPS - ERROR - Position not valid\n");
+                // If the position is not valid, it does not need to be reported as an error since it is already checked
+                // in the receiver status mask above.
                 return;
 			}
 
@@ -316,13 +322,13 @@ void read_GPS(struct gps *gpsData_ptr)
             // Write to GPS data file
             GPSDataFile = fopen(GPS_DATAFILE,"a");
             if(GPSDataFile==NULL){
-                // Report Error
-                fprintf(stderr,"GPS - ERROR - Could not open GPS data file\n");
+                reportError(ERR_GPS_WRITEFO);
+                //fprintf(stderr,"GPS - ERROR - Could not open GPS data file\n");
                 return;
             }
             if(fwrite(response + pCount,1,144,GPSDataFile)!=144){
-                // Report Error
-                fprintf(stderr,"GPS - ERROR - Could not successfully write to GPS data file\n");
+                reportError(ERR_GPS_WRITE);
+                // fprintf(stderr,"GPS - ERROR - Could not successfully write to GPS data file\n");
             }
             fflush(GPSDataFile);
             fclose(GPSDataFile);
@@ -333,7 +339,8 @@ void read_GPS(struct gps *gpsData_ptr)
 		}
 	}
 
-    fprintf(stderr,"GPS - ERROR - No Sync Found\n");
+    reportError(ERR_GPS_READSYNC); // Reports that the sync in the packet has not been found
+    fprintf(stderr,"GPS - ERROR - No Sync Found\n"); // For Debugging
     fprintf(stderr,"============= EXIT read_GPS() ===============\n\n");
 	return;
 

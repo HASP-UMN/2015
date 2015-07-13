@@ -1,7 +1,19 @@
+// ***** HASP UNIVERISTY OF MINNESOTA 2015 *****
+// errorword.h
+// This file manages errors reported by the applications and
+//     creates an error word to be sent in the telemetry packet.
+// Last Edited By: Luke Granlund
+// Last Edited On: 13 July 2015, 13:00
+
 #ifndef ERRORWORD_H
 #define ERRORWORD_H
 
-
+/*
+    Enumeration of errors that can be recorded in HASP.
+    The errors are listed in decreasing priority. The
+    specification for the errors is on the 2015 HASP
+    Google Drive in the Telemetry folder.
+*/
 typedef enum ERRWD {
     ERR_NO_ERROR,
     ERR_IMU_PORTOPEN,
@@ -37,21 +49,12 @@ typedef enum ERRWD {
 ERRWD;
 
 
-
-extern unsigned int currentMaskedErrorID ;
-extern unsigned int currentUnmaskedErrorID ;
-extern unsigned int currentMaskedSysErrno ;
-extern unsigned int currentUnmaskedSysErrno ;
-extern unsigned int maskedErrors[10];
-
-
-
 void advanceErrorMask(unsigned int errorID);
 bool checkInErrorMask(unsigned int errorID);
 void clearError();
+void clearErrorMask();
 void reportError(ERRWD errorID);
 int getErrorWord();
-
 
 
 #endif // ERRORWORD_H
