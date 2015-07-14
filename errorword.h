@@ -3,7 +3,7 @@
 // This file manages errors reported by the applications and
 //     creates an error word to be sent in the telemetry packet.
 // Last Edited By: Luke Granlund
-// Last Edited On: 13 July 2015, 13:00
+// Last Edited On: 14 July 2015, 15:30
 
 #ifndef ERRORWORD_H
 #define ERRORWORD_H
@@ -49,12 +49,8 @@ typedef enum ERRWD {
 ERRWD;
 
 
-void advanceErrorMask(unsigned int errorID);
-bool checkInErrorMask(unsigned int errorID);
-void clearError();
-void clearErrorMask();
 void reportError(ERRWD errorID);
-int getErrorWord();
+void getErrorWord();
 
 
 #endif // ERRORWORD_H

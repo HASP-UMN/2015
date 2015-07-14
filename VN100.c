@@ -20,6 +20,7 @@
 
 #include "globaldefs.h"
 #include "serial.h"
+#include "errorword.h"
 #include "VN100.h"
 
 // VN100 I/O
@@ -27,11 +28,11 @@ const char* IMU_PORT = "/dev/ttyUSB0";             // TTY PORT TO VN100 (SET UP 
 const char* IMU_DATAFILE = "IMU_VN100.txt";        // Path to file where VN100 IMU date will be recorded
 
 // VN100 Commands: Baud Rates //
-unsigned char vn100_B9600[] = "$VNWRG,5,9600*60\n";
+//unsigned char vn100_B9600[] = "$VNWRG,5,9600*60\n";
 unsigned char vn100_B115200[] = "$VNWRG,5,115200*60\n";
-unsigned char vn100_B230400[] = "$VNWRG,5,230400*6A\n";
-unsigned char vn100_B460800[] = "$VNWRG,5,460800*65\n";
-unsigned char vn100_B921600[] = "$VNWRG,5,921600*63\n";
+//unsigned char vn100_B230400[] = "$VNWRG,5,230400*6A\n";
+//unsigned char vn100_B460800[] = "$VNWRG,5,460800*65\n";
+//unsigned char vn100_B921600[] = "$VNWRG,5,921600*63\n";
 
 // VN100 Commands: Async Commands //
 unsigned char vn100_async_none[] = "$VNWRG,6,0*5C\n";
@@ -50,13 +51,15 @@ int init_vn100(){
 	int fd = open(IMU_PORT, O_RDWR | O_NOCTTY);
 
 	if (fd < 0){
-		fprintf(stderr, "Failed to open IMU port\n");
+		reportError(ERR_IMU_PORTOPEN);
 		return -1;
     }//endif
 
 	// Sets up serial settings
 	set_interface_attribs(fd, B115200, 0);
 	set_blocking(fd, 0);
+
+	//usleep(1000000);
 
 	// Sends command to the VN100 IMU to turn off the async data.
 	write(fd, vn100_async_none, sizeof(vn100_async_none));
@@ -87,7 +90,6 @@ char *substring(char* fullString, int start, int end) {
 
 // Reads the VN100 IMU, populates the IMU structure, and writes the data to a file.
 int read_vn100(int fd, struct imu* imuData_ptr, FILE* VN100File){
-	fprintf(stderr,"ENTERING read_vn100()\n");
 
 	size_t bytesToRead;
 	int idx;
@@ -102,16 +104,18 @@ int read_vn100(int fd, struct imu* imuData_ptr, FILE* VN100File){
         return -1;
 	}//endif
 
-	fprintf(stderr,"bytesToRead: %d\n",bytesToRead);//for error checking
+	fprintf(stderr,"IMU - Bytes To Read: %d\n",bytesToRead);  // For Debugging
 
     // Reponses from the VN100 IMU should contain 115 or 131 bytes. If there are
     // a different number of bytes in the response, it is invalid.
 	if (bytesToRead != 115 && bytesToRead != 131){
+        reportError(ERR_IMU_READBYTES);
         return -1;
-    	}//endif
+    }//endif
 
     // Reads data from the IMU.
 	if (read(fd, &imuData_ptr->dataBuffer[0], bytesToRead) < 0){
+        reportError(ERR_IMU_READ);
         return -1;
 	}//endif
 
@@ -120,11 +124,9 @@ int read_vn100(int fd, struct imu* imuData_ptr, FILE* VN100File){
     // the 115 by response and shifts it to the beginning of the dataBuffer arrary, overwriting the 16 byte response.
 	if (bytesToRead == 131){
 		bytesToRead = 115;
-
 		for(idx = 0; idx < bytesToRead; idx++){
 			imuData_ptr->dataBuffer[idx] = imuData_ptr->dataBuffer[idx + 16];
         }
-
     }
 
     // Checksum
@@ -132,8 +134,9 @@ int read_vn100(int fd, struct imu* imuData_ptr, FILE* VN100File){
 	unsigned char bufCheck[] = {imuData_ptr->dataBuffer[bytesToRead - 4], imuData_ptr->dataBuffer[bytesToRead - 3]};    // Received Checksum
 	// Compares the calculated checksum to received checksum
 	if (Checksum != strtol(bufCheck, NULL, 16)){
+        reportError(ERR_IMU_READCHECK);
 		return 0;
-    	}//endif
+    }//endif
 
     // Writes the data to the IMU structure
     imuData_ptr->MagX = (float)atof(substring(imuData_ptr->dataBuffer, 10, 17));
@@ -149,19 +152,11 @@ int read_vn100(int fd, struct imu* imuData_ptr, FILE* VN100File){
     imuData_ptr->Pressure = (float)atof(substring(imuData_ptr->dataBuffer, 100, 109));
 
     // Write IMU VN100 data to a file
-//	FILE *VN100File = fopen(IMU_DATAFILE,"a"); //should be opened and closed just once in main() rather than here
-/*
-    for (idx = 0; idx < (bytesToRead - 1); idx++){
-        fprintf(stderr, "%c", imuData_ptr->dataBuffer[idx]);
-        fprintf(VN100File, "%c", imuData_ptr->dataBuffer[idx]);
-	}
-*/
 	fwrite(imuData_ptr->dataBuffer, sizeof(imuData_ptr->dataBuffer[0]), bytesToRead - 1, VN100File);
-	fwrite(imuData_ptr->dataBuffer, sizeof(imuData_ptr->dataBuffer[0]), bytesToRead - 1, stderr);
+	//fwrite(imuData_ptr->dataBuffer, sizeof(imuData_ptr->dataBuffer[0]), bytesToRead - 1, stderr);  // For Debugging
 
-// should automatically flush if we add \n to the end of each string to be written, will check on this
+    // Should automatically flush if we add \n to the end of each string to be written, will check on this
 	fflush(VN100File);
-//	fclose(VN100File);
 
     return 0;
 }//end read_vn100

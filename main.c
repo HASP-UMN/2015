@@ -26,6 +26,8 @@
 #include "VN100.h"
 #include "gps_novatel.h"
 #include "errorword.h"
+#include "telemetry.h"
+
 
 //Data structures
 struct imu imuData;
@@ -68,6 +70,7 @@ state checkState(state SMSTATE)
 
     switch (SMSTATE) {
         case IDLE:
+
             if ( (time - imuStamp) >= 500){
                 SMSTATE = RD_IMU;
             }
@@ -86,12 +89,8 @@ state checkState(state SMSTATE)
             break;
 
         case RD_IMU:
-            fprintf(stderr, "state = RD_IMU\n");
-            /*
-            if(!read_IMU(&imuData)){
-                IMUlogger(&imuData, log_period);
-            }
-            */
+
+            fprintf(stderr, "\nstate = RD_IMU\n");
             read_vn100(imu_fd, &imuData, VN100File);
             imuStamp = get_timestamp_ms();
             SMSTATE = IDLE;
@@ -99,7 +98,7 @@ state checkState(state SMSTATE)
 
         case RD_GPS:
 
-            fprintf(stderr, "state = RD_GPS\n");
+            fprintf(stderr, "\nstate = RD_GPS\n");
             read_GPS(&gpsData);
             gpsStamp = get_timestamp_ms();
             SMSTATE = IDLE;
@@ -107,18 +106,15 @@ state checkState(state SMSTATE)
 
         case DOWNLINK:
 
-            fprintf(stderr, "state = DOWNLINK\n");
-            fprintf(stderr,"\n+++++++++++++++++++++++++++++++++++++++++++++++++++++\n");
-            fprintf(stderr,"TELEMETRY ERROR WORD:  %d\n", getErrorWord());
-            fprintf(stderr,"+++++++++++++++++++++++++++++++++++++++++++++++++++++\n\n");
-	    //send_telemetry(&sensorData);
+            fprintf(stderr, "\nstate = DOWNLINK\n");
+            getErrorWord();
+            send_telemetry(&imuData,&gpsData,&photonData);
             telStamp = get_timestamp_ms();
-
             SMSTATE = IDLE;
             break;
 
         case EVENT_UPDATE:
-            fprintf(stderr, "state = EVENT_UPDATE\n");
+            fprintf(stderr, "\nstate = EVENT_UPDATE\n");
             /*
             updateEventCounter(&photonData);
             */
@@ -128,7 +124,7 @@ state checkState(state SMSTATE)
             break;
 
         default:
-            fprintf(stderr, "state = default\n");
+            fprintf(stderr, "\nstate = default\n");
             SMSTATE = IDLE;
             break;
     }
@@ -146,12 +142,9 @@ int main()
 
     // Initialize GPS
 	init_GPS(&gpsData);
-	//GPSDataFile = fopen("GPS_OEMSTAR.raw","a");
-//	gpsData.GPSDataFile = fopen("GPS_OEMSTAR.raw","a");
-//	if(gpsData.GPSDataFile==NULL){
-//        fprintf(stderr,"GPS - Could not open GPS data file\n");
-//	}
-	//gpsData.GPSDataFile = fopen("","a");
+
+    // Initialize Telemetry
+    init_telemetry();
 
 // add init for gps and telemetry here
 	t_0 = get_timestamp_ms();
@@ -183,6 +176,7 @@ int main()
 		return -1;
 	}
 */
+
     state SMSTATE = IDLE;
 	int child_status;
     while (1)

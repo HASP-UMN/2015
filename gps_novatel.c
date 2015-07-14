@@ -141,9 +141,7 @@ bool GetBitMask(unsigned char *bits, int startingByte, uint8_t bitMask)
 
 void read_GPS(struct gps *gpsData_ptr)
 {
-    fprintf(stderr,"\n============= ENTER read_GPS() ===============\n"); // For Debugging
-
-	unsigned int state = 0;
+    unsigned int state = 0;
 	unsigned int counter = 0;
 
 	int pCount=0;
@@ -155,7 +153,7 @@ void read_GPS(struct gps *gpsData_ptr)
 	unsigned int CRC_readstr[4];
 
 	bytesInGPSBuffer = read(gpsData_ptr->gps_fd,&response[0],512);
-    fprintf(stderr,"GPS - Bytes to Read: %d\n", bytesInGPSBuffer); // For Debugging
+    //fprintf(stderr,"GPS - Bytes to Read: %d\n", bytesInGPSBuffer);  // For Debugging
 	if(bytesInGPSBuffer<144)
 	{
 	    if(bytesInGPSBuffer==-1){
@@ -193,7 +191,7 @@ void read_GPS(struct gps *gpsData_ptr)
 		case 2:
 			if(response[counter]==0x12){
 				state++;
-                fprintf(stderr,"GPS - Found Sync\n");  // For Debugging
+                //fprintf(stderr,"GPS - Found Sync\n");  // For Debugging
 			}
 			else{
 				state = 0;
@@ -206,21 +204,19 @@ void read_GPS(struct gps *gpsData_ptr)
 		    // Check to see if an entire packet can fit between the starting point and the end of the buffer.
 		    if(bytesInGPSBuffer - pCount < 144){
                 reportError(ERR_GPS_READPACK);
-                //fprintf(stderr, "GPS - ERROR - Partial Packet\n");
                 return;
 		    }
 
 			CRC_read = *((unsigned long *)(&response[140 + pCount]));
 			CRC_computed = CalculateBlockCRC32(140, response + pCount);
 			if (CRC_computed != CRC_read) {
-                // Report Error
-				fprintf(stderr,"GPS - Checksum failed\n");      // For Debugging
+				//fprintf(stderr,"GPS - Checksum failed\n");      // For Debugging
 				return;
 			}
 
 
 			gpsData_ptr->timeStatus = *((uint8_t *)(&response[13]));
-			printf("GPS - Time Status: %d\n",gpsData_ptr->timeStatus);
+			//printf("GPS - Time Status: %d\n",gpsData_ptr->timeStatus);  // For Debugging
 			gpsData_ptr->weekRef = *((uint16_t *)(&response[14]));
 			gpsData_ptr->time = *((long *)(&response[16]));
 
@@ -240,51 +236,39 @@ void read_GPS(struct gps *gpsData_ptr)
 
             if(GetBitMask(response,20 + pCount,0)){
                 reportError(ERR_GPS_RSMEFR);
-                //fprintf(stderr,"GPS ERROR - RSM - Error flag raised\n");
             }
             if(GetBitMask(response,20 + pCount,1)){
                 reportError(ERR_GPS_RSMTEMP);
-                //fprintf(stderr,"GPS ERROR - RSM - Temperature warning\n");
             }
             if(GetBitMask(response,20 + pCount,2)){
                 reportError(ERR_GPS_RSMVOLT);
-                //fprintf(stderr,"GPS ERROR - RSM - Voltage supply warning\n");
             }
             if(GetBitMask(response,20 + pCount,6)){
                 reportError(ERR_GPS_RSMANT);
-                //fprintf(stderr,"GPS ERROR - RSM - Antenna shorted\n");
             }
             if(GetBitMask(response,20 + pCount,7)){
                 reportError(ERR_GPS_RSMCPU);
-                //fprintf(stderr,"GPS ERROR - RSM - CPU overloaded\n");
             }
             if(GetBitMask(response,20 + pCount,8)){
                 reportError(ERR_GPS_RSMCOM);
-                //fprintf(stderr,"GPS ERROR - RSM - COM1 buffer overrun\n");
             }
             if(GetBitMask(response,20 + pCount,15)){
                 reportError(ERR_GPS_RSMAGC);
-                //fprintf(stderr,"GPS ERROR - RSM - Auto Gain Control Warning 1\n");
             }
             if(GetBitMask(response,20 + pCount,17)){
                 reportError(ERR_GPS_RSMAGC);
-                //fprintf(stderr,"GPS ERROR - RSM - Auto Gain Control Warning 2\n");
             }
             if(GetBitMask(response,20 + pCount,18)){
                 reportError(ERR_GPS_RSMALM);
-                //fprintf(stderr,"GPS ERROR - RSM - Almanac/UTC invalid\n");
             }
             if(!posValid){
                 reportError(ERR_GPS_RSMPOS);
-                //fprintf(stderr,"GPS ERROR - RSM - No position solution\n");
             }
             if(GetBitMask(response,20 + pCount,22)){
                 reportError(ERR_GPS_RSMCLO);
-                //fprintf(stderr,"GPS ERROR - RSM - Clock model invalid\n");
             }
             if(GetBitMask(response,20 + pCount,24)){
                 reportError(ERR_GPS_RSMSRW);
-                //fprintf(stderr,"GPS ERROR - RSM - Software resource warning\n");
             }
 
             // For Debugging: Shows current receiver status word
@@ -308,9 +292,8 @@ void read_GPS(struct gps *gpsData_ptr)
                 gpsData_ptr->Xe = 0;
                 gpsData_ptr->Ye = 0;
                 gpsData_ptr->Ze = 0;
-                //fprintf(stderr,"GPS - ERROR - Position not valid\n");
-                // If the position is not valid, it does not need to be reported as an error since it is already checked
-                // in the receiver status mask above.
+                // If the position is not valid, it does not need to be reported as an error
+                // since it is already checked in the receiver status mask above.
                 return;
 			}
 
@@ -323,26 +306,22 @@ void read_GPS(struct gps *gpsData_ptr)
             GPSDataFile = fopen(GPS_DATAFILE,"a");
             if(GPSDataFile==NULL){
                 reportError(ERR_GPS_WRITEFO);
-                //fprintf(stderr,"GPS - ERROR - Could not open GPS data file\n");
                 return;
             }
             if(fwrite(response + pCount,1,144,GPSDataFile)!=144){
                 reportError(ERR_GPS_WRITE);
-                // fprintf(stderr,"GPS - ERROR - Could not successfully write to GPS data file\n");
             }
             fflush(GPSDataFile);
             fclose(GPSDataFile);
 
-            fprintf(stderr,"============= EXIT read_GPS() ===============\n\n");
             return;
 			break;
 		}
 	}
 
     reportError(ERR_GPS_READSYNC); // Reports that the sync in the packet has not been found
-    fprintf(stderr,"GPS - ERROR - No Sync Found\n"); // For Debugging
-    fprintf(stderr,"============= EXIT read_GPS() ===============\n\n");
-	return;
+    //fprintf(stderr,"GPS - ERROR - No Sync Found\n"); // For Debugging
+    return;
 
 }
 
