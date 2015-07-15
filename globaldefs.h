@@ -78,25 +78,15 @@ struct photons
 //STRUCTURE FOR VN100 DATA (REGISTER ID: 54)
 struct imu
 {
-    // SERIAL I/O RESPONSE
-    int port;
-    char dataBuffer[131];
+
+    // GPS I/O
+    int imu_fd;                     // GPS receiver serial communication file descriptor
+    FILE* VN100File;                // GPS file to write data to
+    char dataBuffer[115];
 
     // AMBIENT PAYLOAD TEMPERATURE (TELEMETRY PACKET BYTES 73-78)
     float Temp;     // [C]
 
-    // OTHER CALIBRATED SENSOR MEASUREMENTS
-    float MagX;     // [gauss]
-    float MagY;     // [gauss]
-    float MagZ;     // [gauss]
-    float AccelX;   // [m/s^2]
-    float AccelY;   // [m/s^2]
-    float AccelZ;   // [m/s^2]
-    float GyroX;    // [rad/s]
-    float GyroY;    // [rad/s]
-    float GyroZ;    // [rad/s]
-    // ambient temperature measurement comes here in the response packet
-    float Pressure; // [kPa]
 };
 
 
