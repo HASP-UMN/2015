@@ -27,7 +27,7 @@ unsigned long timeMs = 0; // Time in milliseconds
 //etc.
 
 // Front end A/D converter
-//const int ADCchipSelect = 53; // Chip select for A/D converter
+//const int ADCchipSelect = 9; // Chip select for A/D converter
 uint16_t tempRaw = 0; // A/D converter's internal temp sensor
 uint8_t  channel = 0; // Channel no. [1-4]
 volatile bool newEventCH1 = false; // New event flag for channel 1
@@ -82,7 +82,7 @@ void eventISR_CH4() {
 void setup() {
   
   // Set up Port H on the ATmega2560 as an output port. DDRH is the direction register for Port H.
-  pinMode(53, OUTPUT); // ADC CHIP SELECT
+  pinMode(9, OUTPUT); // ADC CHIP SELECT
   //pinMode(17, OUTPUT);
   //pinMode(16, OUTPUT);
   pinMode(6, OUTPUT); // PK_RST3
@@ -93,7 +93,7 @@ void setup() {
   
   
   // Initialize the digital outputs on Port H to low. PORTH is the register for the state of the outputs.
-  digitalWrite(53, HIGH);
+  digitalWrite(9, HIGH);
   //digitalWrite(17, LOW);
   //digitalWrite(16, LOW);
   digitalWrite(6, LOW);
@@ -130,12 +130,12 @@ void setup() {
   delay(100);
 
   // Write A/D configuration register to enable internal Vref and temperature sensor
-  digitalWrite(53, LOW);
+  digitalWrite(9, LOW);
   Serial.println("Write A/D configuration register");
   delay(10000);
   SPI.transfer(CONFIG_ADDR << 1); // Must shift address 1 bit left for write bit
   SPI.transfer(ADC_CONFIG);
-  digitalWrite(53, HIGH);
+  digitalWrite(9, HIGH);
 //  PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
 //  delayMicroseconds(5);
 //  SPI.transfer(CONFIG_ADDR << 1); // Must shift address 1 bit left for write bit
@@ -217,31 +217,31 @@ void loop() {
 //    Serial.println("Entering newEventCH2()!");
 //
 //    // Read channel 2
-//    digitalWrite(53, LOW);
+//    digitalWrite(9, LOW);
 //    SPI.transfer(MANUAL_READ_ADDR << 1);
 //    SPI.transfer(READ_CH2);
-//    digitalWrite(53, HIGH);
+//    digitalWrite(9, HIGH);
 ////    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
 ////    SPI.transfer(MANUAL_READ_ADDR << 1);
 ////    SPI.transfer(READ_CH2);
 ////    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
 //        
 //    // Read temp sensor
-//    digitalWrite(53, LOW);
+//    digitalWrite(9, LOW);
 //    SPI.transfer(MANUAL_READ_ADDR << 1);
 //    SPI.transfer(READ_TEMP);
-//    digitalWrite(53, HIGH);
+//    digitalWrite(9, HIGH);
 ////    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
 ////    SPI.transfer(MANUAL_READ_ADDR << 1);
 ////    SPI.transfer(READ_TEMP);
 ////    PORTH = PORTH | ADC_CS; // Toggle ADC_CS HIGH
 //
 //    // Get channel 2 data
-//    digitalWrite(53, LOW);
+//    digitalWrite(9, LOW);
 //    peakCH2 = SPI.transfer(0) & 0x0F;
 //    peakCH2 = peakCH2 << 8;
 //    peakCH2 += SPI.transfer(0);
-//    digitalWrite(53, HIGH);
+//    digitalWrite(9, HIGH);
 ////    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
 ////    peakCH2 = SPI.transfer(0) & 0x0F;
 ////    peakCH2 = peakCH2 << 8;
@@ -249,11 +249,11 @@ void loop() {
 ////    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
 //  
 //    // Get temp sensor data
-//    digitalWrite(53, LOW);
+//    digitalWrite(9, LOW);
 //    tempRaw = SPI.transfer(0) & 0x0F;
 //    tempRaw = tempRaw << 8;
 //    tempRaw += SPI.transfer(0);
-//    digitalWrite(53, HIGH);
+//    digitalWrite(9, HIGH);
 ////    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
 ////    tempRaw = SPI.transfer(0) & 0x0F;
 ////    tempRaw = tempRaw << 8;
@@ -362,31 +362,31 @@ void loop() {
     Serial.println("Entering newEventCH3()!");
 
     // Read channel 3
-    digitalWrite(53, LOW);
+    digitalWrite(9, LOW);
     SPI.transfer(MANUAL_READ_ADDR << 1);
     SPI.transfer(READ_CH3);
-    digitalWrite(53, HIGH);
+    digitalWrite(9, HIGH);
 //    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
 //    SPI.transfer(MANUAL_READ_ADDR << 1);
 //    SPI.transfer(READ_CH3);
 //    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
       
     // Read temp sensor
-    digitalWrite(53, LOW);
+    digitalWrite(9, LOW);
     SPI.transfer(MANUAL_READ_ADDR << 1);
     SPI.transfer(READ_TEMP);
-    digitalWrite(53, HIGH);
+    digitalWrite(9, HIGH);
 //    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
 //    SPI.transfer(MANUAL_READ_ADDR << 1);
 //    SPI.transfer(READ_TEMP);
 //    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
 
     // Get channel 3 data
-    digitalWrite(53, LOW);
+    digitalWrite(9, LOW);
     peakCH3 = SPI.transfer(0) & 0x0F;
     peakCH3 = peakCH3 << 8;
     peakCH3 += SPI.transfer(0);
-    digitalWrite(53, HIGH);
+    digitalWrite(9, HIGH);
 //    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
 //    peakCH3 = SPI.transfer(0) & 0x0F;
 //    peakCH3 = peakCH3 << 8;
@@ -394,11 +394,11 @@ void loop() {
 //    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
     
     // Get temp sensor data
-    digitalWrite(53, LOW);
+    digitalWrite(9, LOW);
     tempRaw = SPI.transfer(0) & 0x0F;
     tempRaw = tempRaw << 8;
     tempRaw += SPI.transfer(0);
-    digitalWrite(53, HIGH);
+    digitalWrite(9, HIGH);
 //    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
 //    tempRaw = SPI.transfer(0) & 0x0F;
 //    tempRaw = tempRaw << 8;
