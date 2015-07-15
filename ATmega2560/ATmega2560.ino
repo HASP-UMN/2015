@@ -17,7 +17,7 @@
 #define DISCRIMINATOR4 4 // INT4: Channel 4 discrimintor.
 
 // FIFO full flag. Pin 88 on the ATmega2560
-#define FIFO_FF 88
+#define FIFO_FF A9
 volatile bool FIFO_full_flag = false;
 
 // Timestamping from GPS pulse-per-second (PPS) and real-time clock (RTC)
