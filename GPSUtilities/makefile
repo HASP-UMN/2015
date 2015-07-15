@@ -2,13 +2,15 @@
 
 CC=gcc
 
-all: main
+all: RGDF
 
-main: ReadGPSDataFile.o
+RGDF: ReadGPSDataFile.o
 	$(CC) -o RGDF ReadGPSDataFile.o
+	rm -rf *.o
 
 ReadGPSDataFile.o: ReadGPSDataFile.c
 	$(CC) -c ReadGPSDataFile.c
 
 clean:
+	$(RM) RGDF
 	rm -rf *.o
