@@ -76,11 +76,10 @@ void init_vn100(struct imu* imuData_ptr){
 
     // Reopen file descriptor to make reads
 	imuData_ptr->imu_fd = open(IMU_PORT, O_RDWR | O_NOCTTY);
-
 	if (imuData_ptr->imu_fd < 0){
 		reportError(ERR_IMU_PORTOPEN);
 		return;
-    }//endif
+    }
 
 	// Sets up serial settings
 	set_interface_attribs(imuData_ptr->imu_fd, B115200, 0);
@@ -88,6 +87,10 @@ void init_vn100(struct imu* imuData_ptr){
 
 	// Set up file to write to.
 	imuData_ptr->VN100File = fopen(IMU_DATAFILE,"a");
+	if(GPSDataFile==NULL){
+        reportError(ERR_IMU_WRITEFO);
+        return;
+    }
 
 	return;
 }//end init_vn100()
