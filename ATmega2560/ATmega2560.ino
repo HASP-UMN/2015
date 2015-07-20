@@ -1,5 +1,4 @@
 #include <SPI.h>
-#include <Wire.h>
 #include "atmega2560.h"
 #include <avr/interrupt.h>
 
@@ -22,51 +21,24 @@
 #define FIFO_RST B00000010
 #define FIFO_WR  B00000001
 
-// FIFO full flag. Pin 88 on the ATmega2560
-#define FIFO_FF A9
-volatile bool FIFO_full_flag = false;
-
-<<<<<<< HEAD
 // Timestamps
 unsigned long timeMs = 0; // Time in milliseconds
 //etc.
 //etc.
 //etc.
 
-// ADC
-=======
-//uint16_t tempRaw = 0; // A/D converter's internal temp sensor
-//uint8_t  channel = 0; // Channel no. [1-4]
->>>>>>> fdf9eead36b62a75c9586f235201789f7cf59be9
-volatile bool newEventCH1 = false; // New event flag for channel 1
-volatile bool newEventCH2 = false; // New event flag for channel 2
-volatile bool newEventCH3 = false; // New event flag for channel 3
-volatile bool newEventCH4 = false; // New event flag for channel 4
-//uint16_t peakCH1 = 0; // Peak value for channel 1
-//uint16_t peakCH2 = 0; // Peak value for channel 2
-//uint16_t peakCH3 = 0; // Peak value for channel 3
-//uint16_t peakCH4 = 0; // Peak value for channel 4
-//uint16_t tempRaw = 0; // A/D converter's internal temp sensor
-//uint8_t  channel = 0; // Channel no. [1-4]
+// ISR flags
+volatile bool FIFO_full_flag = false; // FIFO is full
+volatile bool newEventCH1    = false; // New event flag for channel 1
+volatile bool newEventCH2    = false; // New event flag for channel 2
+volatile bool newEventCH3    = false; // New event flag for channel 3
+volatile bool newEventCH4    = false; // New event flag for channel 4
 
-//declarations of data structs for each channel; see atmega2560.h
+// Declarations of data structs for each channel; see atmega2560.h
 ADC_data data_ch1;
 ADC_data data_ch2;
 ADC_data data_ch3;
 ADC_data data_ch4;
-
-
-
-// FIFO interrupt service routine for the FF signal
-void FIFO_FF_ISR() {
-  FIFO_full_flag = true;
-  // The Full Flag (FF) will go LOW, inhibiting further write operation,
-  // when the write pointer is one location less than the read pointer,
-  // indicating that the device is full. If the read pointer is not moved
-  // after Reset (RS), the Full-Flag (FF) will go LOW after 256 writes for
-  // IDT7200, 512 writes for the IDT7201A and 1,024 writes for the IDT7202A.
-  
-}
 
 
 // Ch[1-4] interrupt service routines for threshhold discriminator signals
@@ -98,33 +70,17 @@ ISR(INT4_vect) {
   // Ignore new events if another event (on any channel) is currently being processed
   
 }
+
+// FIFO interrupt service routine for the FF signal
 ISR(PCINT17_vect) {
-  
-  if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
-    newEventCH4 = true;
-  // Ignore new events if another event (on any channel) is currently being processed
+  FIFO_full_flag = true;
+  // The Full Flag (FF) will go LOW, inhibiting further write operation,
+  // when the write pointer is one location less than the read pointer,
+  // indicating that the device is full. If the read pointer is not moved
+  // after Reset (RS), the Full-Flag (FF) will go LOW after 256 writes for
+  // IDT7200, 512 writes for the IDT7201A and 1,024 writes for the IDT7202A.
   
 }
-<<<<<<< HEAD
-=======
-
-// Declarations for TIMING
-unsigned long timeMs = 0; // Time in milliseconds
-#define gpsPV 47              // GPS Position Valid     Port D Pin 4
-#define gpsPulse 46           // GPS Pulse Per Second   Port D Pin 3
-#define rtcPulse 45           // RTC Square Wave Pulse  Port D Pin 2
-#define DS3231addr 0x68       // RTC defined address    1101000    
-void realTimeISR(){usec_offset = micros();} // While GPS position NOT VALID rtc 1hz pulse drives time
-void gpsPulseISR(){usec_offset = micros();} // While GPS position VALID, gps 1hz pulse drives time
-void gpsPVonISR(){detachInterrupt(rtcPulse); attachInterrupt(gpsPulse, gpsPulseISR, RISING);} // Switches ownership of time to gpsPulse
-void gpsPVoffISR(){detachInterrupt(gpsPulse); attachInterrupt(rtcPulse, realTimeISR, FALLING);} // Switches ownership of time to rtcPulse
-volatile uint32_t usec;
-volatile uint32_t usec_offset;
-volatile uint32_t time_hm;
-volatile uint16_t time_uSec;
-
-
->>>>>>> fdf9eead36b62a75c9586f235201789f7cf59be9
 
 void setup() {
   
@@ -135,7 +91,6 @@ void setup() {
   PORTH = B01000011;
   
   
-  
   // PORT F (digital output)
   // Set up Port F on the ATmega2560 as an output port. DDRF is the direction register for Port F.
   DDRF = DDRF | B11111111;
@@ -143,26 +98,26 @@ void setup() {
   PORTF = B00000000;
   
   
-  
-  // PORT K (FIFO full flag on PK1)
-  DDRK   = DDRK   & ~B00000010;    // Set PK1 as input
-  PORTK  = PORTK  |  B00000010;    // Activate PULL UP resistor
-  PCMSK1 = PCMSK1 |  B00000010;    // Enable PCINT17 on PK1
-  PCICR  = PCICR  | (1<<PCIE2);    // Activate interrupt on enabled PCINT23-16
+//  // PORT K (FIFO full flag on PK1)
+//  DDRK   = DDRK   & ~B00000010;    // Set PK1 as input
+//  PORTK  = PORTK  |  B00000010;    // Activate PULL UP resistor
+//  PCMSK1 = PCMSK1 |  B00000010;    // Enable PCINT17 on PK1
+//  PCICR  = PCICR  | (1<<PCIE2);    // Activate interrupt on enabled PCINT23-16
   
   
   // PORT E (CH[1-4] threshhold discriminators)
   DDRE  = DDRE  & ~B11110000;  /* Set PE7 (DISCRIMINATOR1) as input */
-  PORTE = PORTE & ~B11110000; /* Activate PULL DOWN resistors */
+  PORTE = PORTE & ~B11110000;  /* Activate PULL DOWN resistors */
   EICRB = B11111111; // Set INT[4-7] to be on their rising edges
   EIMSK = B11110000; // Enable INT[4-7]
   
   sei(); /* Enables global interrupts ( cli(); is used to disable interrupts ). */ 
 
-  // Reset the FIFO.
-  PORTH |= FIFO_WR; // set FIFO_WR high before resetting
-  PORTH &= ~FIFO_RST; // Toggle FIFO_RST pin from HIGH to LOW
-  PORTH = PORTH |  FIFO_RST; // Toggle FIFO_RST pin from LOW to HIGH  
+
+//  // Reset the FIFO.
+//  PORTH |= FIFO_WR; // set FIFO_WR high before resetting
+//  PORTH &= ~FIFO_RST; // Toggle FIFO_RST pin from HIGH to LOW
+//  PORTH = PORTH |  FIFO_RST; // Toggle FIFO_RST pin from LOW to HIGH  
   
   
     // Write A/D configuration register to enable internal Vref and temperature sensor 
@@ -186,46 +141,6 @@ void setup() {
   SPI.setDataMode(SPI_MODE0);            // Clock polarity = 0, clock phase = 0
   delay(100);
 
-  // Initialize and configure RTC
-  Wire.begin(DS1307addr);
-  Wire.beginTransmission(DS1307addr);  // Initialize Square Wave Oscillator
-  Wire.write(0);
-  Wire.write(0x07); // move pointer to SQW address 
-  Wire.write(0x10); // sends 0x10(hex) : 1Hz Square Wave 
-  Wire.endTransmission();
-  attachInterrupt(rtcPulse, realTimeISR, FALLING); 
-  attachInterrupt(gpsPV, gpsPVonISR, RISING);
-  attachInterrupt(gpsPV, gpsPVoffISR,FALLING);  
-  
-  // Configure interrupts for all four threshhold discriminators
-  EICRB = 0xFF; // Set INT[4-7] to be on their rising edges
-  EIMSK = 0xF0; // Enable INT[4-7]
-  
-  //initialize data structs
-  data_ch1.channel = 1;
-  data_ch2.channel = 2;
-  data_ch3.channel = 3;
-  data_ch4.channel = 4;
-  
-//  attachInterrupt(DISCRIMINATOR1, eventISR_CH1, RISING); //INT7
-//  attachInterrupt(DISCRIMINATOR2, eventISR_CH2, RISING); //INT6
-//  attachInterrupt(DISCRIMINATOR3, eventISR_CH3, RISING); //INT5
-//  attachInterrupt(DISCRIMINATOR4, eventISR_CH4, RISING); //INT4
-
-
-  // Configure interrupts for the FIFO FF
-  //etc.
-  //etc.
-
-
-  // Print data header
-  Serial.print("channel"); Serial.print(',');
-  Serial.print("timeMs");  Serial.print(',');
-  Serial.print("peak");    Serial.print(',');
-  Serial.println("temperature");
-   
-  delay(100);
-
   // Open serial port
   Serial.begin(115200); Serial.flush();
   Serial.println("channel,timeMs,peak,temperature");
@@ -242,8 +157,6 @@ void loop() {
   }
   
   
-  
-  
   if (newEventCH1) {
     
     timeMs = millis();  // Get timestamp in milliseconds
@@ -252,11 +165,24 @@ void loop() {
     data_ch1 = get_data(data_ch1);
     //send_data(data_ch1.channel, timeMs, data_ch1.peak_val, data_ch1.tempRaw);
     
-    //debugging print statements in function below
-    print_debug(data_ch1, "1", timeMs);
+    // Debugging
+    Serial.print("1");    Serial.print(',');
+    Serial.print(timeMs); Serial.print(',');
+    Serial.println(data_ch1.peak_val); Serial.println(" ");
+
+//    Serial.println((channel & 0xFF),            BIN); // [1st byte]
+//    Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
+//    Serial.println((timeMs  & 0xFF00)>>8,       BIN); // [3rd byte]
+//    Serial.println((timeMs  & 0xFF0000)>>16,    BIN); // [4th byte]
+//    Serial.println((timeMs  & 0xFF000000)>>24,  BIN); // [5th byte]
+//    Serial.println((peakCH1 & 0xFF),            BIN); // [6th byte]
+//    Serial.println((peakCH1 & 0xFF00)>>8,       BIN); // [7th byte]
+//    Serial.println((tempRaw & 0xFF),            BIN); // [8th byte]
+//    Serial.println((tempRaw & 0xFF00)>>8,       BIN); // [9th byte]
+//    Serial.println("---------------------------------------------");
     
     // Reset peak value and interrupt flag for CH1
-    newEventCH1 = false;
+    newEventCH1 = false; data_ch1.peak_val = 0;
     delay(1000);
     
   }
@@ -272,11 +198,13 @@ void loop() {
     data_ch2 = get_data(data_ch2);
     //send_data(data_ch2.channel, timeMs, data_ch2.peak_val, data_ch2.tempRaw);
     
-    //debugging print statements in function below
-    print_debug(data_ch2, "2", timeMs); 
+    // Debugging
+    Serial.print("2");    Serial.print(',');
+    Serial.print(timeMs); Serial.print(',');
+    Serial.println(data_ch2.peak_val); Serial.println(" ");
 
     // Reset peak value and interrupt flag for CH2
-    newEventCH2 = false;
+    newEventCH2 = false; data_ch2.peak_val = 0;
     delay(1000);
     
   }
@@ -292,11 +220,25 @@ void loop() {
     data_ch3 = get_data(data_ch3);
     //send_data(data_ch3.channel, timeMs, data_ch3.peak_val, data_ch3.tempRaw);    
     
-    //debugging print statements in function below
-    print_debug(data_ch3, "3", timeMs);   
-    
+    // Debugging
+    Serial.print("3");    Serial.print(',');
+    Serial.print(timeMs); Serial.print(',');
+    Serial.println(data_ch3.peak_val); Serial.println(" ");
+        
+    // Debugging
+    //Serial.println((channel & 0xFF),            BIN); // [1st byte]
+    //Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
+    //Serial.println((timeMs  & 0xFF00)>>8,       BIN); // [3rd byte]
+    ///Serial.println((timeMs  & 0xFF0000)>>16,    BIN); // [4th byte]
+    //Serial.println((timeMs  & 0xFF000000)>>24,  BIN); // [5th byte]
+    //Serial.println((peakCH3 & 0xFF),            BIN); // [6th byte]
+    //Serial.println((peakCH3 & 0xFF00)>>8,       BIN); // [7th byte]
+    //Serial.println((tempRaw & 0xFF),            BIN); // [8th byte]
+    //Serial.println((tempRaw & 0xFF00)>>8,       BIN); // [9th byte]
+    //Serial.println("---------------------------------------------");
+
     // Reset peak value and interrupt flag for CH3
-    newEventCH3 = false;
+    newEventCH3 = false; data_ch3.peak_val = 0;
     delay(1000);
     
   }
@@ -311,11 +253,24 @@ void loop() {
     data_ch4 = get_data(data_ch4);  
     //send_data(data_ch4.channel, timeMs, data_ch4.peak_val, data_ch4.tempRaw);    
     
-    //debugging print statements in function below
-    print_debug(data_ch4, "4", timeMs);
+    // Debugging
+    Serial.print("4");    Serial.print(',');
+    Serial.print(timeMs); Serial.print(',');
+    Serial.println(data_ch4.peak_val); Serial.println(" ");
 
+//    Serial.println((channel & 0xFF),            BIN); // [1st byte]
+//    Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
+//    Serial.println((timeMs  & 0xFF00)>>8,       BIN); // [3rd byte]
+//    Serial.println((timeMs  & 0xFF0000)>>16,    BIN); // [4th byte]
+//    Serial.println((timeMs  & 0xFF000000)>>24,  BIN); // [5th byte]
+//    Serial.println((peakCH4 & 0xFF),            BIN); // [6th byte]
+//    Serial.println((peakCH4 & 0xFF00)>>8,       BIN); // [7th byte]
+//    Serial.println((tempRaw & 0xFF),            BIN); // [8th byte]
+//    Serial.println((tempRaw & 0xFF00)>>8,       BIN); // [9th byte]
+//    Serial.println("---------------------------------------------");
+    
     // Reset peak value and interrupt flag for CH4
-    newEventCH4 = false;
+    newEventCH4 = false; data_ch4.peak_val = 0;
     delay(1000);
   }
  
@@ -330,16 +285,15 @@ ADC_data get_data(ADC_data data) {
     PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
       
     // Read temp sensor
-
     PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
     SPI.transfer(MANUAL_READ_ADDR << 1);
     SPI.transfer(READ_TEMP);
     PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
 
-    // Get channel data
+    // Get channel 3 data
     PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
     data.peak_val = SPI.transfer(0) & 0x0F;
-    data.peak_val = data.peak_val << 8;
+    data.peak_val = data.peakval << 8;
     data.peak_val += SPI.transfer(0);
     PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
     
@@ -396,44 +350,4 @@ void send_data(uint8_t channel, unsigned long timeMs, uint16_t peak, uint16_t te
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
     
-}
-
-uint32_t get_time_hm(){
-  Wire.beginTransmission(DS1307addr);
-  Wire.write(0);
-  Wire.endTransmission();
-  Wire.requestFrom(DS1307addr, 3);
-  uint32_t Seconds = Wire.read();
-  uint32_t Minutes = Wire.read();
-  uint32_t Hours   = Wire.read();
-  time_hm =  Hours<<16 | Minutes<<8 | Seconds;
-  return time_hm;
-}
-
-uint16_t get_time_uSec(){
-  usec = micros() - usec_offset;
-  timeusec =  decToBcd(round(usec/10));
-  return time_uSec;
-}
-
-void print_debug(ADC_data data, char* channel_char, unsigned long timeMs){
-  uint8_t  channel = data.channel;
-  uint16_t peak_val = data.peak_val;
-  uint16_t tempRaw = data.tempRaw;
-  
-    Serial.print(channel_char);    Serial.print(',');
-    Serial.print(timeMs); Serial.print(',');
-    Serial.println(tempRaw); Serial.println(" ");
-
-//    Serial.println((channel & 0xFF),            BIN); // [1st byte]
-//    Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
-//    Serial.println((timeMs  & 0xFF00)>>8,       BIN); // [3rd byte]
-//    Serial.println((timeMs  & 0xFF0000)>>16,    BIN); // [4th byte]
-//    Serial.println((timeMs  & 0xFF000000)>>24,  BIN); // [5th byte]
-//    Serial.println((peak_val & 0xFF),            BIN); // [6th byte]
-//    Serial.println((peak_val & 0xFF00)>>8,       BIN); // [7th byte]
-//    Serial.println((tempRaw & 0xFF),            BIN); // [8th byte]
-//    Serial.println((tempRaw & 0xFF00)>>8,       BIN); // [9th byte]
-//    Serial.println("---------------------------------------------");  
-  
 }
