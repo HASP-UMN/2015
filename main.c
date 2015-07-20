@@ -22,7 +22,7 @@
 
 #include "globaldefs.h"
 #include "read_fifo_store_data.h"
-//#include "timing.h"
+#include "timing.h"
 #include "VN100.h"
 #include "gps_novatel.h"
 #include "errorword.h"
@@ -38,9 +38,6 @@ struct photons photonData;
 FILE* VN100File;
 #define imu_stream_length 131
 char imu_data[imu_stream_length];
-
-// GPS
-#define GPS_PORT "/dev/ttyS1"
 
 //Timestamps stored as longs
 unsigned long t, t_0;
@@ -60,7 +57,7 @@ const unsigned short INPUT_PORT = 0x800; // base address
 
 //state machine state
 typedef enum state{
-    IDLE, RD_IMU, RD_GPS, DOWNLINK, EVENT_UPDATE, LOG_DATA
+    IDLE, RD_IMU, RD_GPS, TELEMETRY, EVENT_UPDATE, LOG_DATA
 }
 state;
 
@@ -78,7 +75,7 @@ state checkState(state SMSTATE)
                 SMSTATE = RD_GPS;
             }
             else if ( (time - telStamp) >= 5000){
-                SMSTATE = DOWNLINK;
+                SMSTATE = TELEMETRY;
             }
             else if ( (time - eventStamp) >= 5000){
                 SMSTATE = EVENT_UPDATE;
@@ -91,7 +88,7 @@ state checkState(state SMSTATE)
         case RD_IMU:
 
             fprintf(stderr, "\nstate = RD_IMU\n");
-            read_vn100(imu_fd, &imuData, VN100File);
+            read_vn100(&imuData);
             imuStamp = get_timestamp_ms();
             SMSTATE = IDLE;
             break;
@@ -104,9 +101,9 @@ state checkState(state SMSTATE)
             SMSTATE = IDLE;
             break;
 
-        case DOWNLINK:
+        case TELEMETRY:
 
-            fprintf(stderr, "\nstate = DOWNLINK\n");
+            fprintf(stderr, "\nstate = TELEMETRY\n");
             getErrorWord();
             send_telemetry(&imuData,&gpsData,&photonData);
             telStamp = get_timestamp_ms();
@@ -137,8 +134,9 @@ int main()
 {
 
     // Initialize IMU
-	imu_fd = init_vn100();
-	VN100File = fopen(IMU_DATAFILE,"a");
+	//imu_fd = init_vn100();
+	//VN100File = fopen(IMU_DATAFILE,"a");
+	init_vn100(&imuData);
 
     // Initialize GPS
 	init_GPS(&gpsData);
