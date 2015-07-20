@@ -147,7 +147,6 @@ void setup() {
   EICRB = 0xFF; // Set INT[4-7] to be on their rising edges
   EIMSK = 0xF0; // Enable INT[4-7]
   
-  
   //initialize data structs
   data_ch1.channel = 1;
   data_ch2.channel = 2;
@@ -191,21 +190,9 @@ void loop() {
     data_ch1 = get_data(data_ch1);
     send_data(data_ch1.channel, timeMs, data_ch1.peak_val, data_ch1.tempRaw);
     
-    // Debugging
-    Serial.print("1");    Serial.print(',');
-    Serial.print(timeMs); Serial.print(',');
-    Serial.println(peakCH1); Serial.println(" ");
-
-//    Serial.println((channel & 0xFF),            BIN); // [1st byte]
-//    Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
-//    Serial.println((timeMs  & 0xFF00)>>8,       BIN); // [3rd byte]
-//    Serial.println((timeMs  & 0xFF0000)>>16,    BIN); // [4th byte]
-//    Serial.println((timeMs  & 0xFF000000)>>24,  BIN); // [5th byte]
-//    Serial.println((peakCH1 & 0xFF),            BIN); // [6th byte]
-//    Serial.println((peakCH1 & 0xFF00)>>8,       BIN); // [7th byte]
-//    Serial.println((tempRaw & 0xFF),            BIN); // [8th byte]
-//    Serial.println((tempRaw & 0xFF00)>>8,       BIN); // [9th byte]
-//    Serial.println("---------------------------------------------");
+    
+    //debugging print statements in function below
+    print_debug(data_ch1, "1", timeMs);
     
     // Reset peak value and interrupt flag for CH1
     newEventCH1 = false;
@@ -221,10 +208,8 @@ void loop() {
     data_ch2 = get_data(data_ch2);
     send_data(data_ch2.channel, timeMs, data_ch2.peak_val, data_ch2.tempRaw);
     
-    // Debugging
-    Serial.print("2");    Serial.print(',');
-    Serial.print(timeMs); Serial.print(',');
-    Serial.println(peakCH2); Serial.println(" ");
+    //debugging print statements in function below
+    print_debug(data_ch2, "2", timeMs); 
 
     // Reset peak value and interrupt flag for CH2
     newEventCH2 = false;
@@ -240,23 +225,9 @@ void loop() {
     data_ch3 = get_data(data_ch3);
     send_data(data_ch3.channel, timeMs, data_ch3.peak_val, data_ch3.tempRaw);    
     
-    // Debugging
-    Serial.print("3");    Serial.print(',');
-    Serial.print(timeMs); Serial.print(',');
-    Serial.println(peakCH3); Serial.println(" ");
-        
-    // Debugging
-    Serial.println((channel & 0xFF),            BIN); // [1st byte]
-    Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
-    Serial.println((timeMs  & 0xFF00)>>8,       BIN); // [3rd byte]
-    Serial.println((timeMs  & 0xFF0000)>>16,    BIN); // [4th byte]
-    Serial.println((timeMs  & 0xFF000000)>>24,  BIN); // [5th byte]
-    Serial.println((peakCH3 & 0xFF),            BIN); // [6th byte]
-    Serial.println((peakCH3 & 0xFF00)>>8,       BIN); // [7th byte]
-    Serial.println((tempRaw & 0xFF),            BIN); // [8th byte]
-    Serial.println((tempRaw & 0xFF00)>>8,       BIN); // [9th byte]
-    Serial.println("---------------------------------------------");
-
+    //debugging print statements in function below
+    print_debug(data_ch3, "3", timeMs);   
+    
     // Reset peak value and interrupt flag for CH3
     newEventCH3 = false;
     delay(1000);
@@ -270,21 +241,8 @@ void loop() {
     data_ch4 = get_data(data_ch4);  
     send_data(data_ch4.channel, timeMs, data_ch4.peak_val, data_ch4.tempRaw);    
     
-    // Debugging
-    Serial.print("4");    Serial.print(',');
-    Serial.print(timeMs); Serial.print(',');
-    Serial.println(peakCH4); Serial.println(" ");
-
-//    Serial.println((channel & 0xFF),            BIN); // [1st byte]
-//    Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
-//    Serial.println((timeMs  & 0xFF00)>>8,       BIN); // [3rd byte]
-//    Serial.println((timeMs  & 0xFF0000)>>16,    BIN); // [4th byte]
-//    Serial.println((timeMs  & 0xFF000000)>>24,  BIN); // [5th byte]
-//    Serial.println((peakCH4 & 0xFF),            BIN); // [6th byte]
-//    Serial.println((peakCH4 & 0xFF00)>>8,       BIN); // [7th byte]
-//    Serial.println((tempRaw & 0xFF),            BIN); // [8th byte]
-//    Serial.println((tempRaw & 0xFF00)>>8,       BIN); // [9th byte]
-//    Serial.println("---------------------------------------------");
+    //debugging print statements in function below
+    print_debug(data_ch4, "4", timeMs);
     
     // Reset peak value and interrupt flag for CH4
     newEventCH4 = false;
@@ -367,4 +325,26 @@ void send_data(uint8_t channel, unsigned long timeMS, uint16_t peak, uint16_t te
     PORTF = (tempRaw & 0xFF00)>>8;         //9th byte    
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
+}
+
+void print_debug(ADC_data data, char* channel_char, unsigned long timeMs){
+  uint8_t  channel = data.channel;
+  uint16_t peak_val = data.peak_val;
+  uint16_t tempRaw = data.tempRaw;
+  
+    Serial.print(channel_char);    Serial.print(',');
+    Serial.print(timeMs); Serial.print(',');
+    Serial.println(tempRaw); Serial.println(" ");
+        
+    Serial.println((channel & 0xFF),            BIN); // [1st byte]
+    Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
+    Serial.println((timeMs  & 0xFF00)>>8,       BIN); // [3rd byte]
+    Serial.println((timeMs  & 0xFF0000)>>16,    BIN); // [4th byte]
+    Serial.println((timeMs  & 0xFF000000)>>24,  BIN); // [5th byte]
+    Serial.println((peak_val & 0xFF),            BIN); // [6th byte]
+    Serial.println((peak_val & 0xFF00)>>8,       BIN); // [7th byte]
+    Serial.println((tempRaw & 0xFF),            BIN); // [8th byte]
+    Serial.println((tempRaw & 0xFF00)>>8,       BIN); // [9th byte]
+    Serial.println("---------------------------------------------");  
+  
 }
