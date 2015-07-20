@@ -23,6 +23,8 @@
 
 // Timestamps
 unsigned long timeMs = 0; // Time in milliseconds
+uint8_t one = 0;
+
 //etc.
 //etc.
 //etc.
@@ -83,6 +85,15 @@ ISR(PCINT17_vect) {
 }
 
 void setup() {
+  SPI.begin();
+  SPI.setClockDivider(SPI_CLOCK_DIV2);  // 8 Mhz SPI clock
+  SPI.setBitOrder(MSBFIRST);            // Most-significant bit first
+  SPI.setDataMode(SPI_MODE0);           // Clock Polarity = 0; clock phase = 0
+  
+  // Open serial port
+  Serial.begin(115200); Serial.flush();
+  Serial.println("channel,timeMs,peak,temperature");
+  Serial.println("=============================");
   
   // PORT H (peak resets, ADC chip select, and FIFO control)
   // Set up Port H on the ATmega2560 as an output port. DDRH is the direction register for Port H.
@@ -90,13 +101,11 @@ void setup() {
   // Initialize the digital outputs. PORTH is the register for the state of the outputs.
   PORTH = B01000011;
   
-  
   // PORT F (digital output)
   // Set up Port F on the ATmega2560 as an output port. DDRF is the direction register for Port F.
   DDRF = DDRF | B11111111;
   // Initialize the digital outputs on Port F to low. PORTF is the register for the state of the outputs.
   PORTF = B00000000;
-  
   
 //  // PORT K (FIFO full flag on PK1)
 //  DDRK   = DDRK   & ~B00000010;    // Set PK1 as input
@@ -113,7 +122,6 @@ void setup() {
   
   sei(); /* Enables global interrupts ( cli(); is used to disable interrupts ). */ 
 
-
 //  // Reset the FIFO.
 //  PORTH |= FIFO_WR; // set FIFO_WR high before resetting
 //  PORTH &= ~FIFO_RST; // Toggle FIFO_RST pin from HIGH to LOW
@@ -123,8 +131,13 @@ void setup() {
     // Write A/D configuration register to enable internal Vref and temperature sensor 
   PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
   delayMicroseconds(5);
+
   SPI.transfer(CONFIG_ADDR << 1); // Must shift address 1 bit left for write bit
+  
+  Serial.println("Completed Config Addr");
   SPI.transfer(ADC_CONFIG);
+  
+  Serial.println("Completed ADC CONFIG");
   PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
   delay(100);
 
@@ -141,10 +154,6 @@ void setup() {
   SPI.setDataMode(SPI_MODE0);            // Clock polarity = 0, clock phase = 0
   delay(100);
 
-  // Open serial port
-  Serial.begin(115200); Serial.flush();
-  Serial.println("channel,timeMs,peak,temperature");
-  Serial.println("=============================");
   
 }
 
@@ -160,15 +169,13 @@ void loop() {
   if (newEventCH1) {
     
     timeMs = millis();  // Get timestamp in milliseconds
-
-    Serial.println("Entering newEventCH1()!");
     data_ch1 = get_data(data_ch1);
     //send_data(data_ch1.channel, timeMs, data_ch1.peak_val, data_ch1.tempRaw);
     
     // Debugging
     Serial.print("1");    Serial.print(',');
     Serial.print(timeMs); Serial.print(',');
-    Serial.println(data_ch1.peak_val); Serial.println(" ");
+    Serial.println(data_ch1.peak_val);
 
 //    Serial.println((channel & 0xFF),            BIN); // [1st byte]
 //    Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
@@ -193,15 +200,13 @@ void loop() {
   if (newEventCH2) {
     
     timeMs = millis();  // Get timestamp in milliseconds
-
-    Serial.println("Entering newEventCH2()!");    
     data_ch2 = get_data(data_ch2);
     //send_data(data_ch2.channel, timeMs, data_ch2.peak_val, data_ch2.tempRaw);
     
     // Debugging
     Serial.print("2");    Serial.print(',');
     Serial.print(timeMs); Serial.print(',');
-    Serial.println(data_ch2.peak_val); Serial.println(" ");
+    Serial.println(data_ch2.peak_val);
 
     // Reset peak value and interrupt flag for CH2
     newEventCH2 = false; data_ch2.peak_val = 0;
@@ -215,15 +220,13 @@ void loop() {
   if (newEventCH3) {
     
     timeMs = millis();  // Get timestamp in milliseconds
-
-    Serial.println("Entering newEventCH3()!");
     data_ch3 = get_data(data_ch3);
     //send_data(data_ch3.channel, timeMs, data_ch3.peak_val, data_ch3.tempRaw);    
     
     // Debugging
     Serial.print("3");    Serial.print(',');
     Serial.print(timeMs); Serial.print(',');
-    Serial.println(data_ch3.peak_val); Serial.println(" ");
+    Serial.println(data_ch3.peak_val);
         
     // Debugging
     //Serial.println((channel & 0xFF),            BIN); // [1st byte]
@@ -248,15 +251,13 @@ void loop() {
   if (newEventCH4) {
     
     timeMs = millis();  // Get timestamp in milliseconds
-
-    Serial.println("Entering newEventCH4()!");
     data_ch4 = get_data(data_ch4);  
     //send_data(data_ch4.channel, timeMs, data_ch4.peak_val, data_ch4.tempRaw);    
     
     // Debugging
     Serial.print("4");    Serial.print(',');
     Serial.print(timeMs); Serial.print(',');
-    Serial.println(data_ch4.peak_val); Serial.println(" ");
+    Serial.println(data_ch4.peak_val);
 
 //    Serial.println((channel & 0xFF),            BIN); // [1st byte]
 //    Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
@@ -293,7 +294,7 @@ ADC_data get_data(ADC_data data) {
     // Get channel 3 data
     PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
     data.peak_val = SPI.transfer(0) & 0x0F;
-    data.peak_val = data.peakval << 8;
+    data.peak_val = data.peak_val << 8;
     data.peak_val += SPI.transfer(0);
     PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
     
