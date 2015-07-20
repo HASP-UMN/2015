@@ -31,24 +31,23 @@
 #define FIFO_FF A9
 volatile bool FIFO_full_flag = false;
 
-// Timestamping from GPS pulse-per-second (PPS) and real-time clock (RTC)
+// Timestamps
 unsigned long timeMs = 0; // Time in milliseconds
 //etc.
 //etc.
 //etc.
 
-// Front end A/D converter
-//const int ADCchipSelect = 9; // Chip select for A/D converter
+
 uint16_t tempRaw = 0; // A/D converter's internal temp sensor
 uint8_t  channel = 0; // Channel no. [1-4]
 volatile bool newEventCH1 = false; // New event flag for channel 1
 volatile bool newEventCH2 = false; // New event flag for channel 2
 volatile bool newEventCH3 = false; // New event flag for channel 3
 volatile bool newEventCH4 = false; // New event flag for channel 4
-uint16_t peakCH1 = 0; // Peak value for channel 1
-uint16_t peakCH2 = 0; // Peak value for channel 2
-uint16_t peakCH3 = 0; // Peak value for channel 3
-uint16_t peakCH4 = 0; // Peak value for channel 4
+//uint16_t peakCH1 = 0; // Peak value for channel 1
+//uint16_t peakCH2 = 0; // Peak value for channel 2
+//uint16_t peakCH3 = 0; // Peak value for channel 3
+//uint16_t peakCH4 = 0; // Peak value for channel 4
 
 
 //declarations of data structs for each channel; see atmega2560.h
@@ -116,6 +115,12 @@ void setup() {
   PORTH &= ~FIFO_RST; // Toggle FIFO_RST pin from HIGH to LOW
   PORTH = PORTH |  FIFO_RST; // Toggle FIFO_RST pin from LOW to HIGH  
   
+    //initialize data structs
+  data_ch1.channel = 1;
+  data_ch2.channel = 2;
+  data_ch3.channel = 3;
+  data_ch4.channel = 4;
+  
   // Open serial port
   Serial.begin(115200); Serial.flush();
   
@@ -147,21 +152,9 @@ void setup() {
   EICRB = 0xFF; // Set INT[4-7] to be on their rising edges
   EIMSK = 0xF0; // Enable INT[4-7]
   
-  
-  //initialize data structs
-  data_ch1.channel = 1;
-  data_ch2.channel = 2;
-  data_ch3.channel = 3;
-  data_ch4.channel = 4;
-  
-//  attachInterrupt(DISCRIMINATOR1, eventISR_CH1, RISING); //INT7
-//  attachInterrupt(DISCRIMINATOR2, eventISR_CH2, RISING); //INT6
-//  attachInterrupt(DISCRIMINATOR3, eventISR_CH3, RISING); //INT5
-//  attachInterrupt(DISCRIMINATOR4, eventISR_CH4, RISING); //INT4
-
-
   // Configure interrupts for the FIFO FF
-  //attachInterrupt(FIFO_FF, FIFO_FF_ISR, FALLING);
+  //etc.
+  //etc.
 
 
   // Print data header
@@ -189,12 +182,12 @@ void loop() {
 
     Serial.println("Entering newEventCH1()!");
     data_ch1 = get_data(data_ch1);
-    send_data(data_ch1.channel, timeMs, data_ch1.peak_val, data_ch1.tempRaw);
+    //send_data(data_ch1.channel, timeMs, data_ch1.peak_val, data_ch1.tempRaw);
     
     // Debugging
     Serial.print("1");    Serial.print(',');
     Serial.print(timeMs); Serial.print(',');
-    Serial.println(peakCH1); Serial.println(" ");
+    Serial.println(data_ch1.peak_val); Serial.println(" ");
 
 //    Serial.println((channel & 0xFF),            BIN); // [1st byte]
 //    Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
@@ -219,12 +212,12 @@ void loop() {
 
     Serial.println("Entering newEventCH2()!");    
     data_ch2 = get_data(data_ch2);
-    send_data(data_ch2.channel, timeMs, data_ch2.peak_val, data_ch2.tempRaw);
+    //send_data(data_ch2.channel, timeMs, data_ch2.peak_val, data_ch2.tempRaw);
     
     // Debugging
     Serial.print("2");    Serial.print(',');
     Serial.print(timeMs); Serial.print(',');
-    Serial.println(peakCH2); Serial.println(" ");
+    Serial.println(data_ch2.peak_val); Serial.println(" ");
 
     // Reset peak value and interrupt flag for CH2
     newEventCH2 = false;
@@ -238,12 +231,12 @@ void loop() {
 
     Serial.println("Entering newEventCH3()!");
     data_ch3 = get_data(data_ch3);
-    send_data(data_ch3.channel, timeMs, data_ch3.peak_val, data_ch3.tempRaw);    
+    //send_data(data_ch3.channel, timeMs, data_ch3.peak_val, data_ch3.tempRaw);    
     
     // Debugging
     Serial.print("3");    Serial.print(',');
     Serial.print(timeMs); Serial.print(',');
-    Serial.println(peakCH3); Serial.println(" ");
+    Serial.println(data_ch3.peak_val); Serial.println(" ");
         
     // Debugging
     Serial.println((channel & 0xFF),            BIN); // [1st byte]
@@ -268,12 +261,12 @@ void loop() {
 
     Serial.println("Entering newEventCH4()!");
     data_ch4 = get_data(data_ch4);  
-    send_data(data_ch4.channel, timeMs, data_ch4.peak_val, data_ch4.tempRaw);    
+    //send_data(data_ch4.channel, timeMs, data_ch4.peak_val, data_ch4.tempRaw);    
     
     // Debugging
     Serial.print("4");    Serial.print(',');
     Serial.print(timeMs); Serial.print(',');
-    Serial.println(peakCH4); Serial.println(" ");
+    Serial.println(data_ch4.peak_val); Serial.println(" ");
 
 //    Serial.println((channel & 0xFF),            BIN); // [1st byte]
 //    Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
@@ -352,11 +345,11 @@ void send_data(uint8_t channel, unsigned long timeMS, uint16_t peak, uint16_t te
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
     
-    PORTF = (peak & 0xFF);              //6th byte    
+    PORTF = (peak & 0xFF);                 //6th byte    
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
     
-    PORTF = (peak & 0xFF00)>>8;         //7th byte        
+    PORTF = (peak & 0xFF00)>>8;            //7th byte        
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
     
