@@ -114,48 +114,38 @@ void setup() {
   PORTH &= ~FIFO_RST; // Toggle FIFO_RST pin from HIGH to LOW
   PORTH = PORTH |  FIFO_RST; // Toggle FIFO_RST pin from LOW to HIGH  
   
-    //initialize data structs
-  data_ch1.channel = 1;
-  data_ch2.channel = 2;
-  data_ch3.channel = 3;
-  data_ch4.channel = 4;
-  
-  // Open serial port
-  Serial.begin(115200); Serial.flush();
-  
-  // Initialize and configure SPI bus for A/D communications
-  SPI.begin();
-  SPI.setClockDivider(SPI_CLOCK_DIV2);   // 8 MHz SPI clock
-  SPI.setBitOrder(MSBFIRST);             // Most-significant bit first
-  SPI.setDataMode(SPI_MODE0);            // Clock polarity = 0, clock phase = 0
-
-  delay(100);
-
-  // Write A/D configuration register to enable internal Vref and temperature sensor 
-  PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
-  delayMicroseconds(5);
-  SPI.transfer(CONFIG_ADDR << 1); // Must shift address 1 bit left for write bit
-  SPI.transfer(ADC_CONFIG);
-  PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
-  
-  delay(100);
-
-  // Configure interrupts for all four threshhold discriminators
+    // Configure interrupts for all four threshhold discriminators
   EICRB = 0xFF; // Set INT[4-7] to be on their rising edges
   EIMSK = 0xF0; // Enable INT[4-7]
   
   // Configure interrupts for the FIFO FF
   //etc.
   //etc.
-
-
-  // Print data header
-  Serial.print("channel"); Serial.print(',');
-  Serial.print("timeMs");  Serial.print(',');
-  Serial.print("peak");    Serial.print(',');
-  Serial.println("temperature");
-   
+  
+    // Write A/D configuration register to enable internal Vref and temperature sensor 
+  PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
+  delayMicroseconds(5);
+  SPI.transfer(CONFIG_ADDR << 1); // Must shift address 1 bit left for write bit
+  SPI.transfer(ADC_CONFIG);
+  PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
   delay(100);
+
+  // Initialize data structs
+  data_ch1.channel = 1;
+  data_ch2.channel = 2;
+  data_ch3.channel = 3;
+  data_ch4.channel = 4;
+  
+  // Initialize and configure SPI bus for A/D communications
+  SPI.begin();
+  SPI.setClockDivider(SPI_CLOCK_DIV2);   // 8 MHz SPI clock
+  SPI.setBitOrder(MSBFIRST);             // Most-significant bit first
+  SPI.setDataMode(SPI_MODE0);            // Clock polarity = 0, clock phase = 0
+  delay(100);
+
+  // Open serial port
+  Serial.begin(115200); Serial.flush();
+  Serial.println("channel,timeMs,peak,temperature");
   Serial.println("=============================");
   
 }
@@ -167,6 +157,9 @@ void loop() {
      // if the FF flag is set in the beginning of the loop (i.e. at boot or after a reset), unset it
      // this really should never happen and if it does we should send an error code 
   }
+  
+  
+  
   
   if (newEventCH1) {
     
@@ -195,7 +188,10 @@ void loop() {
     // Reset peak value and interrupt flag for CH1
     newEventCH1 = false;
     delay(1000);
+    
   }
+
+
 
 
   if (newEventCH2) {
@@ -214,7 +210,10 @@ void loop() {
     // Reset peak value and interrupt flag for CH2
     newEventCH2 = false;
     delay(1000);
+    
   }
+
+
 
 
   if (newEventCH3) {
@@ -245,7 +244,10 @@ void loop() {
     // Reset peak value and interrupt flag for CH3
     newEventCH3 = false;
     delay(1000);
+    
   }
+
+
 
   if (newEventCH4) {
     
@@ -279,7 +281,7 @@ void loop() {
 }
 
 
-ADC_data get_data(ADC_data data){
+ADC_data get_data(ADC_data data) {
     
     PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
     SPI.transfer(MANUAL_READ_ADDR << 1);
@@ -311,11 +313,11 @@ ADC_data get_data(ADC_data data){
     PORTH = PORTH | PK_RST3; // Toggle PK_RST3 HIGH
     PORTH = PORTH & ~PK_RST3; // Toggle PK_RST3 LOW
     return data;
+    
 }
 
 
-
-void send_data(uint8_t channel, unsigned long timeMs, uint16_t peak, uint16_t tempRaw){
+void send_data(uint8_t channel, unsigned long timeMs, uint16_t peak, uint16_t tempRaw) {
  
     PORTF = (channel & 0xFF);              //1st byte
     PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
@@ -352,4 +354,5 @@ void send_data(uint8_t channel, unsigned long timeMs, uint16_t peak, uint16_t te
     PORTF = (tempRaw & 0xFF00)>>8;         //9th byte    
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
+    
 }
