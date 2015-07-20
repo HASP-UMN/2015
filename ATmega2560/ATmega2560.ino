@@ -33,6 +33,8 @@ volatile bool FIFO_full_flag = false;
 
 // Timestamps
 unsigned long timeMs = 0; // Time in milliseconds
+uint8_t one = 0;
+
 //etc.
 //etc.
 //etc.
@@ -91,37 +93,56 @@ ISR(INT4_vect) {
 
 
 void setup() {
+  SPI.begin();
+  SPI.setClockDivider(SPI_CLOCK_DIV2);  // 8 Mhz SPI clock
+  SPI.setBitOrder(MSBFIRST);            // Most-significant bit first
+  SPI.setDataMode(SPI_MODE0);           // Clock Polarity = 0; clock phase = 0
+  
+  // Open serial port
+  Serial.begin(115200); Serial.flush();
+  Serial.println("channel,timeMs,peak,temperature");
+  Serial.println("=============================");
   
   // Set up Port H on the ATmega2560 as an output port. DDRH is the direction register for Port H.
   DDRH = DDRH | B01111111;
-  // Set up Port F on the ATmega2560 as an output port. DDRF is the direction register for Port F.
-  DDRF = DDRF | B11111111;
-  
-  
   // Initialize the digital outputs. PORTH is the register for the state of the outputs.
   PORTH = B01000011;
+  
+  // PORT F (digital output)
+  // Set up Port F on the ATmega2560 as an output port. DDRF is the direction register for Port F.
+  DDRF = DDRF | B11111111;
   // Initialize the digital outputs on Port F to low. PORTF is the register for the state of the outputs.
   PORTF = B00000000;
+  
+//  // PORT K (FIFO full flag on PK1)
+//  DDRK   = DDRK   & ~B00000010;    // Set PK1 as input
+//  PORTK  = PORTK  |  B00000010;    // Activate PULL UP resistor
+//  PCMSK1 = PCMSK1 |  B00000010;    // Enable PCINT17 on PK1
+//  PCICR  = PCICR  | (1<<PCIE2);    // Activate interrupt on enabled PCINT23-16
 
+// PORT E (CH[1-4] threshhold discriminators)
+  DDRE  = DDRE  & ~B11110000;  /* Set PE7 (DISCRIMINATOR1) as input */
+  PORTE = PORTE & ~B11110000;  /* Activate PULL DOWN resistors */
+  EICRB = B11111111; // Set INT[4-7] to be on their rising edges
+  EIMSK = B11110000; // Enable INT[4-7]
+  
+  sei(); /* Enables global interrupts ( cli(); is used to disable interrupts ). */
+   
+//  // Reset the FIFO.
+//  PORTH |= FIFO_WR; // set FIFO_WR high before resetting
+//  PORTH &= ~FIFO_RST; // Toggle FIFO_RST pin from HIGH to LOW
+//  PORTH = PORTH |  FIFO_RST; // Toggle FIFO_RST pin from LOW to HIGH  
 
-  // Reset the FIFO.
-  PORTH |= FIFO_WR; // set FIFO_WR high before resetting
-  PORTH &= ~FIFO_RST; // Toggle FIFO_RST pin from HIGH to LOW
-  PORTH = PORTH |  FIFO_RST; // Toggle FIFO_RST pin from LOW to HIGH  
-  
-    // Configure interrupts for all four threshhold discriminators
-  EICRB = 0xFF; // Set INT[4-7] to be on their rising edges
-  EIMSK = 0xF0; // Enable INT[4-7]
-  
-  // Configure interrupts for the FIFO FF
-  //etc.
-  //etc.
-  
     // Write A/D configuration register to enable internal Vref and temperature sensor 
   PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
   delayMicroseconds(5);
+
   SPI.transfer(CONFIG_ADDR << 1); // Must shift address 1 bit left for write bit
+  
+  Serial.println("Completed Config Addr");
   SPI.transfer(ADC_CONFIG);
+  
+  Serial.println("Completed ADC CONFIG");
   PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
   delay(100);
 
@@ -137,26 +158,12 @@ void setup() {
   SPI.setBitOrder(MSBFIRST);             // Most-significant bit first
   SPI.setDataMode(SPI_MODE0);            // Clock polarity = 0, clock phase = 0
   delay(100);
-
-  // Configure interrupts for all four threshhold discriminators
-  EICRB = 0xFF; // Set INT[4-7] to be on their rising edges
-  EIMSK = 0xF0; // Enable INT[4-7]
   
   //initialize data structs
   data_ch1.channel = 1;
   data_ch2.channel = 2;
   data_ch3.channel = 3;
   data_ch4.channel = 4;
-  
-//  attachInterrupt(DISCRIMINATOR1, eventISR_CH1, RISING); //INT7
-//  attachInterrupt(DISCRIMINATOR2, eventISR_CH2, RISING); //INT6
-//  attachInterrupt(DISCRIMINATOR3, eventISR_CH3, RISING); //INT5
-//  attachInterrupt(DISCRIMINATOR4, eventISR_CH4, RISING); //INT4
-
-
-  // Configure interrupts for the FIFO FF
-  //etc.
-  //etc.
 
 
   // Print data header
@@ -164,13 +171,12 @@ void setup() {
   Serial.print("timeMs");  Serial.print(',');
   Serial.print("peak");    Serial.print(',');
   Serial.println("temperature");
-   
-  delay(100);
 
   // Open serial port
   Serial.begin(115200); Serial.flush();
   Serial.println("channel,timeMs,peak,temperature");
   Serial.println("=============================");
+
   
 }
 
@@ -182,19 +188,16 @@ void loop() {
      // this really should never happen and if it does we should send an error code 
   }
   
-  
-  
-  
+ 
   if (newEventCH1) {
     
     timeMs = millis();  // Get timestamp in milliseconds
-
-    Serial.println("Entering newEventCH1()!");
     data_ch1 = get_data(data_ch1);
     //send_data(data_ch1.channel, timeMs, data_ch1.peak_val, data_ch1.tempRaw);
     
     //debugging print statements in function below
     print_debug(data_ch1, "1", timeMs);
+
     
     // Reset peak value and interrupt flag for CH1
     newEventCH1 = false;
@@ -202,14 +205,9 @@ void loop() {
     
   }
 
-
-
-
   if (newEventCH2) {
     
     timeMs = millis();  // Get timestamp in milliseconds
-
-    Serial.println("Entering newEventCH2()!");    
     data_ch2 = get_data(data_ch2);
     //send_data(data_ch2.channel, timeMs, data_ch2.peak_val, data_ch2.tempRaw);
     
@@ -219,17 +217,11 @@ void loop() {
     // Reset peak value and interrupt flag for CH2
     newEventCH2 = false;
     delay(1000);
-    
   }
-
-
-
 
   if (newEventCH3) {
     
     timeMs = millis();  // Get timestamp in milliseconds
-
-    Serial.println("Entering newEventCH3()!");
     data_ch3 = get_data(data_ch3);
     //send_data(data_ch3.channel, timeMs, data_ch3.peak_val, data_ch3.tempRaw);    
     
@@ -238,8 +230,7 @@ void loop() {
     
     // Reset peak value and interrupt flag for CH3
     newEventCH3 = false;
-    delay(1000);
-    
+    delay(1000);    
   }
 
 
@@ -247,11 +238,10 @@ void loop() {
   if (newEventCH4) {
     
     timeMs = millis();  // Get timestamp in milliseconds
-
-    Serial.println("Entering newEventCH4()!");
     data_ch4 = get_data(data_ch4);  
     //send_data(data_ch4.channel, timeMs, data_ch4.peak_val, data_ch4.tempRaw);    
     
+
     //debugging print statements in function below
     print_debug(data_ch4, "4", timeMs);
 
