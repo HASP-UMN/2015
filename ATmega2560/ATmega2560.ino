@@ -1,4 +1,5 @@
 #include <SPI.h>
+#include <Wire.h>
 #include "atmega2560.h"
 #include <avr/interrupt.h>
 
@@ -30,13 +31,6 @@
 // FIFO full flag. Pin 88 on the ATmega2560
 #define FIFO_FF A9
 volatile bool FIFO_full_flag = false;
-
-// Timestamps
-unsigned long timeMs = 0; // Time in milliseconds
-//etc.
-//etc.
-//etc.
-
 
 //uint16_t tempRaw = 0; // A/D converter's internal temp sensor
 //uint8_t  channel = 0; // Channel no. [1-4]
@@ -94,6 +88,22 @@ ISR(INT4_vect) {
   
 }
 
+// Declarations for TIMING
+unsigned long timeMs = 0; // Time in milliseconds
+#define gpsPV 47              // GPS Position Valid     Port D Pin 4
+#define gpsPulse 46           // GPS Pulse Per Second   Port D Pin 3
+#define rtcPulse 45           // RTC Square Wave Pulse  Port D Pin 2
+#define DS3231addr 0x68       // RTC defined address    1101000    
+void realTimeISR(){usec_offset = micros();} // While GPS position NOT VALID rtc 1hz pulse drives time
+void gpsPulseISR(){usec_offset = micros();} // While GPS position VALID, gps 1hz pulse drives time
+void gpsPVonISR(){detachInterrupt(rtcPulse); attachInterrupt(gpsPulse, gpsPulseISR, RISING);} // Switches ownership of time to gpsPulse
+void gpsPVoffISR(){detachInterrupt(gpsPulse); attachInterrupt(rtcPulse, realTimeISR, FALLING);} // Switches ownership of time to rtcPulse
+volatile uint32_t usec;
+volatile uint32_t usec_offset;
+volatile uint32_t time_hm;
+volatile uint16_t time_uSec;
+
+
 
 void setup() {
   
@@ -143,6 +153,17 @@ void setup() {
   SPI.setDataMode(SPI_MODE0);            // Clock polarity = 0, clock phase = 0
   delay(100);
 
+  // Initialize and configure RTC
+  Wire.begin(DS1307addr);
+  Wire.beginTransmission(DS1307addr);  // Initialize Square Wave Oscillator
+  Wire.write(0);
+  Wire.write(0x07); // move pointer to SQW address 
+  Wire.write(0x10); // sends 0x10(hex) : 1Hz Square Wave 
+  Wire.endTransmission();
+  attachInterrupt(rtcPulse, realTimeISR, FALLING); 
+  attachInterrupt(gpsPV, gpsPVonISR, RISING);
+  attachInterrupt(gpsPV, gpsPVoffISR,FALLING);  
+  
   // Configure interrupts for all four threshhold discriminators
   EICRB = 0xFF; // Set INT[4-7] to be on their rising edges
   EIMSK = 0xF0; // Enable INT[4-7]
@@ -342,6 +363,24 @@ void send_data(uint8_t channel, unsigned long timeMs, uint16_t peak, uint16_t te
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
     
+}
+
+uint32_t get_time_hm(){
+  Wire.beginTransmission(DS1307addr);
+  Wire.write(0);
+  Wire.endTransmission();
+  Wire.requestFrom(DS1307addr, 3);
+  uint32_t Seconds = Wire.read();
+  uint32_t Minutes = Wire.read();
+  uint32_t Hours   = Wire.read();
+  time_hm =  Hours<<16 | Minutes<<8 | Seconds;
+  return time_hm;
+}
+
+uint16_t get_time_uSec(){
+  usec = micros() - usec_offset;
+  timeusec =  decToBcd(round(usec/10));
+  return time_uSec;
 }
 
 void print_debug(ADC_data data, char* channel_char, unsigned long timeMs){
