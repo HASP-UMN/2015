@@ -323,7 +323,7 @@ ADC_data get_data(ADC_data data){
 
 
 
-void send_data(uint8_t channel, unsigned long timeMS, uint16_t peak, uint16_t tempRaw){
+void send_data(uint8_t channel, unsigned long timeMs, uint16_t peak, uint16_t tempRaw){
  
     PORTF = (channel & 0xFF);              //1st byte
     PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
