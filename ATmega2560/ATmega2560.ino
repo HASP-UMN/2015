@@ -3,29 +3,23 @@
 #include <avr/interrupt.h>
 
 // Addresses and commands for A/D operation (SPI interface). See ADS8634 datasheet.
-#define ADC_CONFIG       0B00000110 // Enable internal Vref and temperature sensor.
-#define READ_CH1         0B01001010 // Read A/D channel 2 (MCA ch.1) with 0 to 10V range.
-#define READ_CH2         0B01101010 // Read A/D channel 3 (MCA ch.2) with 0 to 10V range.
-#define READ_CH3         0B00001010 // Read A/D channel 0 (MCA ch.3) with 0 to 10V range.
-#define READ_CH4         0B00101010 // Read A/D channel 1 (MCA ch.4) with 0 to 10V range.
-#define READ_TEMP        0B00000001 // Read temperature sensor.
+#define ADC_CONFIG       B00000110 // Enable internal Vref and temperature sensor.
+#define READ_CH1         B01001010 // Read A/D channel 2 (MCA ch.1) with 0 to 10V range.
+#define READ_CH2         B01101010 // Read A/D channel 3 (MCA ch.2) with 0 to 10V range.
+#define READ_CH3         B00001010 // Read A/D channel 0 (MCA ch.3) with 0 to 10V range.
+#define READ_CH4         B00101010 // Read A/D channel 1 (MCA ch.4) with 0 to 10V range.
+#define READ_TEMP        B00000001 // Read temperature sensor.
 #define CONFIG_ADDR      0x06 // 7-bit internal control register address
 #define MANUAL_READ_ADDR 0x04 // 7-bit address for manual mode read register
 
-// Peak threshhold discriminators. INT[7-4] on the ATmega2560 (inputs).
-#define DISCRIMINATOR1 7 // INT7: Channel 1 discrimintor.
-#define DISCRIMINATOR2 6 // INT6: Channel 2 discrimintor.
-#define DISCRIMINATOR3 5 // INT5: Channel 3 discrimintor.
-#define DISCRIMINATOR4 4 // INT4: Channel 4 discrimintor.
-
-// Port masks for Port H
-#define ADC_CS   0B01000000
-#define PK_RST1  0B00100000
-#define PK_RST2  0B00010000
-#define PK_RST3  0B00001000
-#define PK_RST4  0B00000100
-#define FIFO_RST 0B00000010
-#define FIFO_WR  0B00000001
+// PORTH masking vectors
+#define ADC_CS   B01000000
+#define PK_RST1  B00100000
+#define PK_RST2  B00010000
+#define PK_RST3  B00001000
+#define PK_RST4  B00000100
+#define FIFO_RST B00000010
+#define FIFO_WR  B00000001
 
 // FIFO full flag. Pin 88 on the ATmega2560
 #define FIFO_FF A9
@@ -37,9 +31,7 @@ unsigned long timeMs = 0; // Time in milliseconds
 //etc.
 //etc.
 
-
-//uint16_t tempRaw = 0; // A/D converter's internal temp sensor
-//uint8_t  channel = 0; // Channel no. [1-4]
+// ADC
 volatile bool newEventCH1 = false; // New event flag for channel 1
 volatile bool newEventCH2 = false; // New event flag for channel 2
 volatile bool newEventCH3 = false; // New event flag for channel 3
@@ -48,13 +40,16 @@ volatile bool newEventCH4 = false; // New event flag for channel 4
 //uint16_t peakCH2 = 0; // Peak value for channel 2
 //uint16_t peakCH3 = 0; // Peak value for channel 3
 //uint16_t peakCH4 = 0; // Peak value for channel 4
-
+//uint16_t tempRaw = 0; // A/D converter's internal temp sensor
+//uint8_t  channel = 0; // Channel no. [1-4]
 
 //declarations of data structs for each channel; see atmega2560.h
 ADC_data data_ch1;
 ADC_data data_ch2;
 ADC_data data_ch3;
 ADC_data data_ch4;
+
+
 
 // FIFO interrupt service routine for the FF signal
 void FIFO_FF_ISR() {
@@ -70,57 +65,79 @@ void FIFO_FF_ISR() {
 
 // Ch[1-4] interrupt service routines for threshhold discriminator signals
 ISR(INT7_vect) {
+  
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH1 = true;
   // Ignore new events if another event (on any channel) is currently being processed
   
 }
 ISR(INT6_vect) {
+  
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH2 = true;
   // Ignore new events if another event (on any channel) is currently being processed
   
 }
 ISR(INT5_vect) {
+  
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH3 = true;
   // Ignore new events if another event (on any channel) is currently being processed
   
 }
 ISR(INT4_vect) {
+  
+  if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
+    newEventCH4 = true;
+  // Ignore new events if another event (on any channel) is currently being processed
+  
+}
+ISR(PCINT17_vect) {
+  
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH4 = true;
   // Ignore new events if another event (on any channel) is currently being processed
   
 }
 
-
 void setup() {
   
+  // PORT H (peak resets, ADC chip select, and FIFO control)
   // Set up Port H on the ATmega2560 as an output port. DDRH is the direction register for Port H.
   DDRH = DDRH | B01111111;
-  // Set up Port F on the ATmega2560 as an output port. DDRF is the direction register for Port F.
-  DDRF = DDRF | B11111111;
-  
-  
   // Initialize the digital outputs. PORTH is the register for the state of the outputs.
   PORTH = B01000011;
+  
+  
+  
+  // PORT F (digital output)
+  // Set up Port F on the ATmega2560 as an output port. DDRF is the direction register for Port F.
+  DDRF = DDRF | B11111111;
   // Initialize the digital outputs on Port F to low. PORTF is the register for the state of the outputs.
   PORTF = B00000000;
-
+  
+  
+  
+  // PORT K (FIFO full flag on PK1)
+  DDRK   = DDRK   & ~B00000010;    // Set PK1 as input
+  PORTK  = PORTK  |  B00000010;    // Activate PULL UP resistor
+  PCMSK1 = PCMSK1 |  B00000010;    // Enable PCINT17 on PK1
+  PCICR  = PCICR  | (1<<PCIE2);    // Activate interrupt on enabled PCINT23-16
+  
+  
+  // PORT E (CH[1-4] threshhold discriminators)
+  DDRE  = DDRE  & ~B11110000;  /* Set PE7 (DISCRIMINATOR1) as input */
+  PORTE = PORTE & ~B11110000; /* Activate PULL DOWN resistors */
+  EICRB = B11111111; // Set INT[4-7] to be on their rising edges
+  EIMSK = B11110000; // Enable INT[4-7]
+  
+  sei(); /* Enables global interrupts ( cli(); is used to disable interrupts ). */ 
 
   // Reset the FIFO.
   PORTH |= FIFO_WR; // set FIFO_WR high before resetting
   PORTH &= ~FIFO_RST; // Toggle FIFO_RST pin from HIGH to LOW
   PORTH = PORTH |  FIFO_RST; // Toggle FIFO_RST pin from LOW to HIGH  
   
-    // Configure interrupts for all four threshhold discriminators
-  EICRB = 0xFF; // Set INT[4-7] to be on their rising edges
-  EIMSK = 0xF0; // Enable INT[4-7]
-  
-  // Configure interrupts for the FIFO FF
-  //etc.
-  //etc.
   
     // Write A/D configuration register to enable internal Vref and temperature sensor 
   PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
