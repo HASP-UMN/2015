@@ -38,8 +38,8 @@ unsigned long timeMs = 0; // Time in milliseconds
 //etc.
 
 
-uint16_t tempRaw = 0; // A/D converter's internal temp sensor
-uint8_t  channel = 0; // Channel no. [1-4]
+//uint16_t tempRaw = 0; // A/D converter's internal temp sensor
+//uint8_t  channel = 0; // Channel no. [1-4]
 volatile bool newEventCH1 = false; // New event flag for channel 1
 volatile bool newEventCH2 = false; // New event flag for channel 2
 volatile bool newEventCH3 = false; // New event flag for channel 3
@@ -69,7 +69,6 @@ void FIFO_FF_ISR() {
 
 
 // Ch[1-4] interrupt service routines for threshhold discriminator signals
-
 ISR(INT7_vect) {
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH1 = true;
@@ -132,14 +131,7 @@ void setup() {
 
   delay(100);
 
-  // Write A/D configuration register to enable internal Vref and temperature sensor
-  digitalWrite(9, LOW);
-  Serial.println("Write A/D configuration register");
-  delay(10000);
-  SPI.transfer(CONFIG_ADDR << 1); // Must shift address 1 bit left for write bit
-  SPI.transfer(ADC_CONFIG);
-  digitalWrite(9, HIGH);
-  
+  // Write A/D configuration register to enable internal Vref and temperature sensor 
   PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
   delayMicroseconds(5);
   SPI.transfer(CONFIG_ADDR << 1); // Must shift address 1 bit left for write bit
@@ -239,16 +231,16 @@ void loop() {
     Serial.println(data_ch3.peak_val); Serial.println(" ");
         
     // Debugging
-    Serial.println((channel & 0xFF),            BIN); // [1st byte]
-    Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
-    Serial.println((timeMs  & 0xFF00)>>8,       BIN); // [3rd byte]
-    Serial.println((timeMs  & 0xFF0000)>>16,    BIN); // [4th byte]
-    Serial.println((timeMs  & 0xFF000000)>>24,  BIN); // [5th byte]
-    Serial.println((peakCH3 & 0xFF),            BIN); // [6th byte]
-    Serial.println((peakCH3 & 0xFF00)>>8,       BIN); // [7th byte]
-    Serial.println((tempRaw & 0xFF),            BIN); // [8th byte]
-    Serial.println((tempRaw & 0xFF00)>>8,       BIN); // [9th byte]
-    Serial.println("---------------------------------------------");
+    //Serial.println((channel & 0xFF),            BIN); // [1st byte]
+    //Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
+    //Serial.println((timeMs  & 0xFF00)>>8,       BIN); // [3rd byte]
+    ///Serial.println((timeMs  & 0xFF0000)>>16,    BIN); // [4th byte]
+    //Serial.println((timeMs  & 0xFF000000)>>24,  BIN); // [5th byte]
+    //Serial.println((peakCH3 & 0xFF),            BIN); // [6th byte]
+    //Serial.println((peakCH3 & 0xFF00)>>8,       BIN); // [7th byte]
+    //Serial.println((tempRaw & 0xFF),            BIN); // [8th byte]
+    //Serial.println((tempRaw & 0xFF00)>>8,       BIN); // [9th byte]
+    //Serial.println("---------------------------------------------");
 
     // Reset peak value and interrupt flag for CH3
     newEventCH3 = false;
