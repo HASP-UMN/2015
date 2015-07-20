@@ -1,4 +1,5 @@
 #include <SPI.h>
+#include <avr/interrupt.h>
 
 // Addresses and commands for A/D operation (SPI interface). See ADS8634 datasheet.
 #define ADC_CONFIG       0B00000110 // Enable internal Vref and temperature sensor.
@@ -62,25 +63,26 @@ void FIFO_FF_ISR() {
 
 
 // Ch[1-4] interrupt service routines for threshhold discriminator signals
-void eventISR_CH1() {
+
+ISR(INT7_vect) {
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH1 = true;
   // Ignore new events if another event (on any channel) is currently being processed
   
 }
-void eventISR_CH2() {
+ISR(INT6_vect) {
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH2 = true;
   // Ignore new events if another event (on any channel) is currently being processed
   
 }
-void eventISR_CH3() {
+ISR(INT5_vect) {
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH3 = true;
   // Ignore new events if another event (on any channel) is currently being processed
   
 }
-void eventISR_CH4() {
+ISR(INT4_vect) {
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH4 = true;
   // Ignore new events if another event (on any channel) is currently being processed
@@ -135,11 +137,19 @@ void setup() {
   
   delay(100);
 
-  // Configure interrupts for all four threshhold discriminators and the FIFO FF
-//  attachInterrupt(DISCRIMINATOR1, eventISR_CH1, RISING);
-//  attachInterrupt(DISCRIMINATOR2, eventISR_CH2, RISING);
-//  attachInterrupt(DISCRIMINATOR3, eventISR_CH3, RISING);
-//  attachInterrupt(DISCRIMINATOR4, eventISR_CH4, RISING);
+  // Configure interrupts for all four threshhold discriminators
+  EICRB = 0xFF; // Set INT[4-7] to be on their rising edges
+  EIMSK = 0xF0; // Enable INT[4-7]
+  
+  
+  
+//  attachInterrupt(DISCRIMINATOR1, eventISR_CH1, RISING); //INT7
+//  attachInterrupt(DISCRIMINATOR2, eventISR_CH2, RISING); //INT6
+//  attachInterrupt(DISCRIMINATOR3, eventISR_CH3, RISING); //INT5
+//  attachInterrupt(DISCRIMINATOR4, eventISR_CH4, RISING); //INT4
+
+
+  // Configure interrupts for the FIFO FF
   //attachInterrupt(FIFO_FF, FIFO_FF_ISR, FALLING);
 
 
