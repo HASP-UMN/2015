@@ -1,5 +1,6 @@
 #include <SPI.h>
 #include "atmega2560.h"
+#include <avr/interrupt.h>
 
 // Addresses and commands for A/D operation (SPI interface). See ADS8634 datasheet.
 #define ADC_CONFIG       0B00000110 // Enable internal Vref and temperature sensor.
@@ -17,14 +18,18 @@
 #define DISCRIMINATOR3 5 // INT5: Channel 3 discrimintor.
 #define DISCRIMINATOR4 4 // INT4: Channel 4 discrimintor.
 
+// Port masks for Port H
+#define ADC_CS   0B01000000
+#define PK_RST1  0B00100000
+#define PK_RST2  0B00010000
+#define PK_RST3  0B00001000
+#define PK_RST4  0B00000100
+#define FIFO_RST 0B00000010
+#define FIFO_WR  0B00000001
+
 // FIFO full flag. Pin 88 on the ATmega2560
 #define FIFO_FF A9
 volatile bool FIFO_full_flag = false;
-#define FIFO_WR 0B00000001 // PH0
-#define FIFO_RS 0B00000010 // PH1
-
-#define CHIP_SELECT 9 // this is the arduino pin corresponding to PH6
-#define ADC_CS 0B01000000
 
 // Timestamping from GPS pulse-per-second (PPS) and real-time clock (RTC)
 unsigned long timeMs = 0; // Time in milliseconds
@@ -46,6 +51,12 @@ uint16_t peakCH3 = 0; // Peak value for channel 3
 uint16_t peakCH4 = 0; // Peak value for channel 4
 
 
+//declarations of data structs for each channel; see atmega2560.h
+ADC_data data_ch1;
+ADC_data data_ch2;
+ADC_data data_ch3;
+ADC_data data_ch4;
+
 // FIFO interrupt service routine for the FF signal
 void FIFO_FF_ISR() {
   FIFO_full_flag = true;
@@ -59,25 +70,26 @@ void FIFO_FF_ISR() {
 
 
 // Ch[1-4] interrupt service routines for threshhold discriminator signals
-void eventISR_CH1() {
+
+ISR(INT7_vect) {
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH1 = true;
   // Ignore new events if another event (on any channel) is currently being processed
   
 }
-void eventISR_CH2() {
+ISR(INT6_vect) {
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH2 = true;
   // Ignore new events if another event (on any channel) is currently being processed
   
 }
-void eventISR_CH3() {
+ISR(INT5_vect) {
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH3 = true;
   // Ignore new events if another event (on any channel) is currently being processed
   
 }
-void eventISR_CH4() {
+ISR(INT4_vect) {
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH4 = true;
   // Ignore new events if another event (on any channel) is currently being processed
@@ -88,42 +100,21 @@ void eventISR_CH4() {
 void setup() {
   
   // Set up Port H on the ATmega2560 as an output port. DDRH is the direction register for Port H.
-  pinMode(9, OUTPUT); // ADC CHIP SELECT
-  //pinMode(17, OUTPUT);
-  //pinMode(16, OUTPUT);
-  pinMode(6, OUTPUT); // PK_RST3
-  //pinMode(14, OUTPUT);
-  //pinMode(13, OUTPUT);
-  //pinMode(12, OUTPUT);
-  //DDRH = DDRH | B01111111;
-  
-  
-  // Initialize the digital outputs on Port H to low. PORTH is the register for the state of the outputs.
-  digitalWrite(9, HIGH);
-  //digitalWrite(17, LOW);
-  //digitalWrite(16, LOW);
-  digitalWrite(6, LOW);
-  //digitalWrite(14, LOW);
-  //digitalWrite(13, HIGH); 
-  //digitalWrite(12, HIGH);
-  //PORTH = B01000011;
-  
-  
+  DDRH = DDRH | B01111111;
   // Set up Port F on the ATmega2560 as an output port. DDRF is the direction register for Port F.
   DDRF = DDRF | B11111111;
-
+  
+  
+  // Initialize the digital outputs. PORTH is the register for the state of the outputs.
+  PORTH = B01000011;
   // Initialize the digital outputs on Port F to low. PORTF is the register for the state of the outputs.
   PORTF = B00000000;
 
 
   // Reset the FIFO.
   PORTH |= FIFO_WR; // set FIFO_WR high before resetting
-  PORTH &= ~FIFO_RS; // Toggle FIFO_RST pin from HIGH to LOW
-  //digitalWrite(13, LOW);
-  delayMicroseconds(5);
-  //digitalWrite(13, HIGH);
-  PORTH = PORTH |  FIFO_RS; // Toggle FIFO_RST pin from LOW to HIGH
-  
+  PORTH &= ~FIFO_RST; // Toggle FIFO_RST pin from HIGH to LOW
+  PORTH = PORTH |  FIFO_RST; // Toggle FIFO_RST pin from LOW to HIGH  
   
   // Open serial port
   Serial.begin(115200); Serial.flush();
@@ -143,20 +134,33 @@ void setup() {
   SPI.transfer(CONFIG_ADDR << 1); // Must shift address 1 bit left for write bit
   SPI.transfer(ADC_CONFIG);
   digitalWrite(9, HIGH);
-//  PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
-//  delayMicroseconds(5);
-//  SPI.transfer(CONFIG_ADDR << 1); // Must shift address 1 bit left for write bit
-//  SPI.transfer(ADC_CONFIG);
-//  PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
   
+  PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
+  delayMicroseconds(5);
+  SPI.transfer(CONFIG_ADDR << 1); // Must shift address 1 bit left for write bit
+  SPI.transfer(ADC_CONFIG);
+  PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
   
   delay(100);
 
-  // Configure interrupts for all four threshhold discriminators and the FIFO FF
-  attachInterrupt(DISCRIMINATOR1, eventISR_CH1, RISING);
-  attachInterrupt(DISCRIMINATOR2, eventISR_CH2, RISING);
-  attachInterrupt(DISCRIMINATOR3, eventISR_CH3, RISING);
-  attachInterrupt(DISCRIMINATOR4, eventISR_CH4, RISING);
+  // Configure interrupts for all four threshhold discriminators
+  EICRB = 0xFF; // Set INT[4-7] to be on their rising edges
+  EIMSK = 0xF0; // Enable INT[4-7]
+  
+  
+  //initialize data structs
+  data_ch1.channel = 1;
+  data_ch2.channel = 2;
+  data_ch3.channel = 3;
+  data_ch4.channel = 4;
+  
+//  attachInterrupt(DISCRIMINATOR1, eventISR_CH1, RISING); //INT7
+//  attachInterrupt(DISCRIMINATOR2, eventISR_CH2, RISING); //INT6
+//  attachInterrupt(DISCRIMINATOR3, eventISR_CH3, RISING); //INT5
+//  attachInterrupt(DISCRIMINATOR4, eventISR_CH4, RISING); //INT4
+
+
+  // Configure interrupts for the FIFO FF
   //attachInterrupt(FIFO_FF, FIFO_FF_ISR, FALLING);
 
 
@@ -179,197 +183,67 @@ void loop() {
      // this really should never happen and if it does we should send an error code 
   }
   
-//  if (newEventCH1) {
-//    timeMs = millis();  // Get timestamp in milliseconds
-//
-//    // Issue A/D command to read MCA channel 1 peak value
-//    digitalWrite(ADCchipSelect, LOW);
-//    SPI.transfer(MANUAL_READ_ADDR << 1);
-//    SPI.transfer(READ_CH1);
-//    digitalWrite(ADCchipSelect, HIGH);
-//
-//    // Wait one additional frame for data to be ready
-//    digitalWrite(ADCchipSelect, LOW);
-//    SPI.transfer(0);
-//    SPI.transfer(0);
-//    digitalWrite(ADCchipSelect, HIGH);
-//
-//    // Read out peak value for MCA channel 1
-//    digitalWrite(ADCchipSelect, LOW);
-//    peakCH1 = SPI.transfer(0) & 0x0F;
-//    peakCH1 = peakCH1 << 8;
-//    peakCH1 += SPI.transfer(0);
-//    digitalWrite(ADCchipSelect, HIGH);
-//
-//    send_data(channel, timeMS, peakCH1, tempRaw);
+  if (newEventCH1) {
+    
+    timeMs = millis();  // Get timestamp in milliseconds
 
-//    // Reset peak detector
-//    digitalWrite(RESET_CH1, HIGH);
-//    delayMicroseconds(5);
-//    digitalWrite(RESET_CH1, LOW);
-//
-//    Serial.print("1");    Serial.print(',');
-//    Serial.print(timeMs); Serial.print(',');
-//    Serial.println(peakCH1);
-//
-//    peakCH1 = 0;
-//    newEventCH1 = false;
-//    
-//  }
+    Serial.println("Entering newEventCH1()!");
+    data_ch1 = get_data(data_ch1);
+    send_data(data_ch1.channel, timeMs, data_ch1.peak_val, data_ch1.tempRaw);
+    
+    // Debugging
+    Serial.print("1");    Serial.print(',');
+    Serial.print(timeMs); Serial.print(',');
+    Serial.println(peakCH1); Serial.println(" ");
 
-
-//  if (newEventCH2) {
-//    
-//    timeMs = millis();  // Get timestamp in milliseconds
-//    channel = 2;        // Assign channel number
-//
-//    Serial.println("Entering newEventCH2()!");
-//
-//    // Read channel 2
-//    digitalWrite(9, LOW);
-//    SPI.transfer(MANUAL_READ_ADDR << 1);
-//    SPI.transfer(READ_CH2);
-//    digitalWrite(9, HIGH);
-////    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
-////    SPI.transfer(MANUAL_READ_ADDR << 1);
-////    SPI.transfer(READ_CH2);
-////    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
-//        
-//    // Read temp sensor
-//    digitalWrite(9, LOW);
-//    SPI.transfer(MANUAL_READ_ADDR << 1);
-//    SPI.transfer(READ_TEMP);
-//    digitalWrite(9, HIGH);
-////    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
-////    SPI.transfer(MANUAL_READ_ADDR << 1);
-////    SPI.transfer(READ_TEMP);
-////    PORTH = PORTH | ADC_CS; // Toggle ADC_CS HIGH
-//
-//    // Get channel 2 data
-//    digitalWrite(9, LOW);
-//    peakCH2 = SPI.transfer(0) & 0x0F;
-//    peakCH2 = peakCH2 << 8;
-//    peakCH2 += SPI.transfer(0);
-//    digitalWrite(9, HIGH);
-////    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
-////    peakCH2 = SPI.transfer(0) & 0x0F;
-////    peakCH2 = peakCH2 << 8;
-////    peakCH2 += SPI.transfer(0);
-////    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
-//  
-//    // Get temp sensor data
-//    digitalWrite(9, LOW);
-//    tempRaw = SPI.transfer(0) & 0x0F;
-//    tempRaw = tempRaw << 8;
-//    tempRaw += SPI.transfer(0);
-//    digitalWrite(9, HIGH);
-////    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
-////    tempRaw = SPI.transfer(0) & 0x0F;
-////    tempRaw = tempRaw << 8;
-////    tempRaw += SPI.transfer(0);
-////    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
-//
-//    // Reset the peak detector. PH4 (the 5th bit of Port H) is the CH2 reset signal.
-//    digitalWrite(6, HIGH);
-//    delayMicroseconds(5);
-//    digitalWrite(6, LOW);
-////    PORTH = PORTH | PK_RST2; // Toggle PK_RST2 HIGH
-////    delayMicroseconds(5);
-////    PORTH = PORTH & ~PK_RST2; // Toggle PK_RST2 LOW
-//    
-//    // Debugging
-//    Serial.print("2");    Serial.print(',');
-//    Serial.print(timeMs); Serial.print(',');
-//    Serial.println(peakCH2); Serial.println(" ");
-//
-////    // Send detector data (byte-by-byte) to the FIFO memory chip
-//      send_data(channel, timeMS, peakCH2, tempRaw);
-
-
-//    // Debugging
 //    Serial.println((channel & 0xFF),            BIN); // [1st byte]
 //    Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
 //    Serial.println((timeMs  & 0xFF00)>>8,       BIN); // [3rd byte]
 //    Serial.println((timeMs  & 0xFF0000)>>16,    BIN); // [4th byte]
 //    Serial.println((timeMs  & 0xFF000000)>>24,  BIN); // [5th byte]
-//    Serial.println((peakCH2 & 0xFF),            BIN); // [6th byte]
-//    Serial.println((peakCH2 & 0xFF00)>>8,       BIN); // [7th byte]
+//    Serial.println((peakCH1 & 0xFF),            BIN); // [6th byte]
+//    Serial.println((peakCH1 & 0xFF00)>>8,       BIN); // [7th byte]
 //    Serial.println((tempRaw & 0xFF),            BIN); // [8th byte]
 //    Serial.println((tempRaw & 0xFF00)>>8,       BIN); // [9th byte]
 //    Serial.println("---------------------------------------------");
-//    
-//    // Reset peak value and interrupt flag for CH2
-//    peakCH2 = 0; newEventCH2 = false;
-//    delay(1000);
-//  }
+    
+    // Reset peak value and interrupt flag for CH1
+    newEventCH1 = false;
+    delay(1000);
+  }
+
+
+  if (newEventCH2) {
+    
+    timeMs = millis();  // Get timestamp in milliseconds
+
+    Serial.println("Entering newEventCH2()!");    
+    data_ch2 = get_data(data_ch2);
+    send_data(data_ch2.channel, timeMs, data_ch2.peak_val, data_ch2.tempRaw);
+    
+    // Debugging
+    Serial.print("2");    Serial.print(',');
+    Serial.print(timeMs); Serial.print(',');
+    Serial.println(peakCH2); Serial.println(" ");
+
+    // Reset peak value and interrupt flag for CH2
+    newEventCH2 = false;
+    delay(1000);
+  }
+
 
   if (newEventCH3) {
     
     timeMs = millis();  // Get timestamp in milliseconds
-    channel = 3;        // Assign channel number
 
     Serial.println("Entering newEventCH3()!");
-
-    // Read channel 3
-    digitalWrite(9, LOW);
-    SPI.transfer(MANUAL_READ_ADDR << 1);
-    SPI.transfer(READ_CH3);
-    digitalWrite(9, HIGH);
-//    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
-//    SPI.transfer(MANUAL_READ_ADDR << 1);
-//    SPI.transfer(READ_CH3);
-//    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
-      
-    // Read temp sensor
-    digitalWrite(9, LOW);
-    SPI.transfer(MANUAL_READ_ADDR << 1);
-    SPI.transfer(READ_TEMP);
-    digitalWrite(9, HIGH);
-//    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
-//    SPI.transfer(MANUAL_READ_ADDR << 1);
-//    SPI.transfer(READ_TEMP);
-//    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
-
-    // Get channel 3 data
-    digitalWrite(9, LOW);
-    peakCH3 = SPI.transfer(0) & 0x0F;
-    peakCH3 = peakCH3 << 8;
-    peakCH3 += SPI.transfer(0);
-    digitalWrite(9, HIGH);
-//    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
-//    peakCH3 = SPI.transfer(0) & 0x0F;
-//    peakCH3 = peakCH3 << 8;
-//    peakCH3 += SPI.transfer(0);
-//    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
+    data_ch3 = get_data(data_ch3);
+    send_data(data_ch3.channel, timeMs, data_ch3.peak_val, data_ch3.tempRaw);    
     
-    // Get temp sensor data
-    digitalWrite(9, LOW);
-    tempRaw = SPI.transfer(0) & 0x0F;
-    tempRaw = tempRaw << 8;
-    tempRaw += SPI.transfer(0);
-    digitalWrite(9, HIGH);
-//    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
-//    tempRaw = SPI.transfer(0) & 0x0F;
-//    tempRaw = tempRaw << 8;
-//    tempRaw += SPI.transfer(0);
-//    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
-
-    // Reset the peak detector. PH3 (the 4th bit of Port H) is the CH3 reset signal.
-    digitalWrite(6, HIGH);
-    delayMicroseconds(5);
-    digitalWrite(6, LOW);
-//    PORTH = PORTH | PK_RST3; // Toggle PK_RST3 HIGH
-//    delayMicroseconds(5);
-//    PORTH = PORTH & ~PK_RST3; // Toggle PK_RST3 LOW
-    
-    // Debugging    
+    // Debugging
     Serial.print("3");    Serial.print(',');
     Serial.print(timeMs); Serial.print(',');
     Serial.println(peakCH3); Serial.println(" ");
-
-//    // Send detector data (byte-by-byte) to the FIFO memory chip
-
-    send_data(channel, timeMs, peakCH3, tempRaw);
         
     // Debugging
     Serial.println((channel & 0xFF),            BIN); // [1st byte]
@@ -382,70 +256,49 @@ void loop() {
     Serial.println((tempRaw & 0xFF),            BIN); // [8th byte]
     Serial.println((tempRaw & 0xFF00)>>8,       BIN); // [9th byte]
     Serial.println("---------------------------------------------");
-    
+
     // Reset peak value and interrupt flag for CH3
-    peakCH3 = 0; newEventCH3 = false;
+    newEventCH3 = false;
     delay(1000);
   }
 
-//  if (newEventCH4) {
-//
-//    timeMs = millis();  // Get timestamp in milliseconds
-//
-//    // Issue A/D command to read MCA channel 1 peak value
-//    digitalWrite(ADCchipSelect, LOW);
-//    SPI.transfer(MANUAL_READ_ADDR << 1);
-//    SPI.transfer(READ_CH4);
-//    digitalWrite(ADCchipSelect, HIGH);
-//
-//    // Wait one additional frame for data to be ready
-//    digitalWrite(ADCchipSelect, LOW);
-//    SPI.transfer(0);
-//    SPI.transfer(0);
-//    digitalWrite(ADCchipSelect, HIGH);
-//
-//    // Read out peak value for MCA channel 1
-//    digitalWrite(ADCchipSelect, LOW);
-//    peakCH4 = SPI.transfer(0) & 0x0F;
-//    peakCH4 = peakCH4 << 8;
-//    peakCH4 += SPI.transfer(0);
-//    digitalWrite(ADCchipSelect, HIGH);
-//
-//    send_data(channel, timeMS, peakCH4, tempRaw);
+  if (newEventCH4) {
+    
+    timeMs = millis();  // Get timestamp in milliseconds
 
+    Serial.println("Entering newEventCH4()!");
+    data_ch4 = get_data(data_ch4);  
+    send_data(data_ch4.channel, timeMs, data_ch4.peak_val, data_ch4.tempRaw);    
+    
+    // Debugging
+    Serial.print("4");    Serial.print(',');
+    Serial.print(timeMs); Serial.print(',');
+    Serial.println(peakCH4); Serial.println(" ");
 
-//    // Reset peak detector
-//    digitalWrite(RESET_CH4, HIGH);
-//    delayMicroseconds(5);
-//    digitalWrite(RESET_CH4, LOW);
-//
-//    Serial.print("4");    Serial.print(',');
-//    Serial.print(timeMs); Serial.print(',');
-//    Serial.println(peakCH4);
-//
-//    peakCH4 = 0;
-//    newEventCH4 = false;
-//  }
-
-}
-
-
-void read_ADC(){
-  
-    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
-    SPI.transfer(MANUAL_READ_ADDR << 1);
-    SPI.transfer(READ_CH3);
-    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
-  
-}
-
-ADC_data get_data(byte read_channel){
+//    Serial.println((channel & 0xFF),            BIN); // [1st byte]
+//    Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
+//    Serial.println((timeMs  & 0xFF00)>>8,       BIN); // [3rd byte]
+//    Serial.println((timeMs  & 0xFF0000)>>16,    BIN); // [4th byte]
+//    Serial.println((timeMs  & 0xFF000000)>>24,  BIN); // [5th byte]
+//    Serial.println((peakCH4 & 0xFF),            BIN); // [6th byte]
+//    Serial.println((peakCH4 & 0xFF00)>>8,       BIN); // [7th byte]
+//    Serial.println((tempRaw & 0xFF),            BIN); // [8th byte]
+//    Serial.println((tempRaw & 0xFF00)>>8,       BIN); // [9th byte]
+//    Serial.println("---------------------------------------------");
+    
+    // Reset peak value and interrupt flag for CH4
+    newEventCH4 = false;
+    delay(1000);
+  }
  
-    uint16_t peak_value;
+}
+
+
+ADC_data get_data(ADC_data data){
     
     PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
     SPI.transfer(MANUAL_READ_ADDR << 1);
-    SPI.transfer(READ_CH3);
+    SPI.transfer(data.channel);
     PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
       
     // Read temp sensor
@@ -456,38 +309,23 @@ ADC_data get_data(byte read_channel){
     PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
 
     // Get channel 3 data
-//    digitalWrite(9, LOW);
-//    peak_value = SPI.transfer(0) & 0x0F;
-//    peak_value = peakCH3 << 8;
-//    peak_value += SPI.transfer(0);
-//    digitalWrite(9, HIGH);
     PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
-    peakCH3 = SPI.transfer(0) & 0x0F;
-    peakCH3 = peakCH3 << 8;
-    peakCH3 += SPI.transfer(0);
+    data.peak_val = SPI.transfer(0) & 0x0F;
+    data.peak_val = peakCH3 << 8;
+    data.peak_val += SPI.transfer(0);
     PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
     
     // Get temp sensor data
-//    digitalWrite(9, LOW);
-//    tempRaw = SPI.transfer(0) & 0x0F;
-//    tempRaw = tempRaw << 8;
-//    tempRaw += SPI.transfer(0);
-//    digitalWrite(9, HIGH);
     PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
-    tempRaw = SPI.transfer(0) & 0x0F;
-    tempRaw = tempRaw << 8;
-    tempRaw += SPI.transfer(0);
+    data.tempRaw = SPI.transfer(0) & 0x0F;
+    data.tempRaw = tempRaw << 8;
+    data.tempRaw += SPI.transfer(0);
     PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
 
     // Reset the peak detector. PH3 (the 4th bit of Port H) is the CH3 reset signal.
-//    digitalWrite(6, HIGH);
-//    delayMicroseconds(5);
-//    digitalWrite(6, LOW);
     PORTH = PORTH | PK_RST3; // Toggle PK_RST3 HIGH
-    delayMicroseconds(5);
     PORTH = PORTH & ~PK_RST3; // Toggle PK_RST3 LOW
-
-  
+    return data;
 }
 
 
@@ -530,5 +368,3 @@ void send_data(uint8_t channel, unsigned long timeMS, uint16_t peak, uint16_t te
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
 }
-
-
