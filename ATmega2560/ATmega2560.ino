@@ -1,4 +1,5 @@
 #include <SPI.h>
+#include "atmega2560.h"
 
 // Addresses and commands for A/D operation (SPI interface). See ADS8634 datasheet.
 #define ADC_CONFIG       0B00000110 // Enable internal Vref and temperature sensor.
@@ -19,6 +20,11 @@
 // FIFO full flag. Pin 88 on the ATmega2560
 #define FIFO_FF A9
 volatile bool FIFO_full_flag = false;
+#define FIFO_WR 0B00000001 // PH0
+#define FIFO_RS 0B00000010 // PH1
+
+#define CHIP_SELECT 9 // this is the arduino pin corresponding to PH6
+#define ADC_CS 0B01000000
 
 // Timestamping from GPS pulse-per-second (PPS) and real-time clock (RTC)
 unsigned long timeMs = 0; // Time in milliseconds
@@ -111,11 +117,12 @@ void setup() {
 
 
   // Reset the FIFO.
-  //PORTH = PORTH & ~FIFO_RST; // Toggle FIFO_RST pin from HIGH to LOW
+  PORTH |= FIFO_WR; // set FIFO_WR high before resetting
+  PORTH &= ~FIFO_RS; // Toggle FIFO_RST pin from HIGH to LOW
   //digitalWrite(13, LOW);
-  //delayMicroseconds(5);
+  delayMicroseconds(5);
   //digitalWrite(13, HIGH);
-  //PORTH = PORTH |  FIFO_RST; // Toggle FIFO_RST pin from LOW to HIGH
+  PORTH = PORTH |  FIFO_RS; // Toggle FIFO_RST pin from LOW to HIGH
   
   
   // Open serial port
@@ -169,7 +176,7 @@ void loop() {
   if (FIFO_full_flag) {
      FIFO_full_flag = false;
      // if the FF flag is set in the beginning of the loop (i.e. at boot or after a reset), unset it
-  
+     // this really should never happen and if it does we should send an error code 
   }
   
 //  if (newEventCH1) {
@@ -194,6 +201,8 @@ void loop() {
 //    peakCH1 += SPI.transfer(0);
 //    digitalWrite(ADCchipSelect, HIGH);
 //
+//    send_data(channel, timeMS, peakCH1, tempRaw);
+
 //    // Reset peak detector
 //    digitalWrite(RESET_CH1, HIGH);
 //    delayMicroseconds(5);
@@ -274,69 +283,9 @@ void loop() {
 //    Serial.println(peakCH2); Serial.println(" ");
 //
 ////    // Send detector data (byte-by-byte) to the FIFO memory chip
-////    //PORTF = (channel & 0xFF);              //1st byte
-////    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;    //first latch                
-////    //PORTB = PORTB | FIFO_WRITE_ENABLE;
-////    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
-////    PORTF = (channel & 0xFF); // Present byte 1 to Port F
-////    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
-////
-////    //PORTF = (timeMs  & 0xFF);              //2nd byte    
-////    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;       
-////    //PORTB = PORTB | FIFO_WRITE_ENABLE;
-////    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
-////    PORTF = (timeMs  & 0xFF); // Present byte 2 to Port F
-////    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
-////   
-////    //PORTF = (timeMs  & 0xFF00)>>8;         //3rd byte    
-////    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;        
-////    //PORTB = PORTB | FIFO_WRITE_ENABLE;
-////    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
-////    PORTF = (timeMs  & 0xFF00)>>8; // Present byte 3 to Port F
-////    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
-////
-////    //PORTF = (timeMs  & 0xFF0000)>>16;      //4th byte
-////    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;        
-////    //PORTB = PORTB | FIFO_WRITE_ENABLE;
-////    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
-////    PORTF = (timeMs  & 0xFF0000)>>16; // Present byte 4 to Port F
-////    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
-////    
-////    //PORTF = (timeMs  & 0xFF000000)>>24;    //5th byte    
-////    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
-////    //PORTB = PORTB | FIFO_WRITE_ENABLE;
-////    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
-////    PORTF = (timeMs  & 0xFF000000)>>24; // Present byte 5 to Port F
-////    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
-////    
-////    //PORTF = (peakCH2 & 0xFF);              //6th byte
-////    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
-////    //PORTB = PORTB | FIFO_WRITE_ENABLE;
-////    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
-////    PORTF = (peakCH2 & 0xFF); // Present byte 6 to Port F
-////    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
-////    
-////    //PORTF = (peakCH2 & 0xFF00)>>8;         //7th byte    
-////    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
-////    //PORTB = PORTB | FIFO_WRITE_ENABLE;
-////    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
-////    PORTF = (peakCH2 & 0xFF00)>>8; // Present byte 7 to Port F
-////    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
-////       
-////    //PORTF = (tempRaw & 0xFF);              //8th byte
-////    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
-////    //PORTB = PORTB | FIFO_WRITE_ENABLE;
-////    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
-////    PORTF = (tempRaw & 0xFF); // Present byte 8 to Port F
-////    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
-////        
-////    //PORTF = (tempRaw & 0xFF00)>>8;         //9th byte
-////    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
-////    //PORTB = PORTB | FIFO_WRITE_ENABLE;
-////    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
-////    PORTF = (tempRaw & 0xFF00)>>8; // Present byte 9 to Port F
-////    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
-//    
+//      send_data(channel, timeMS, peakCH2, tempRaw);
+
+
 //    // Debugging
 //    Serial.println((channel & 0xFF),            BIN); // [1st byte]
 //    Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
@@ -419,68 +368,8 @@ void loop() {
     Serial.println(peakCH3); Serial.println(" ");
 
 //    // Send detector data (byte-by-byte) to the FIFO memory chip
-//    //PORTF = (channel & 0xFF);              //1st byte
-//    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;    //first latch                
-//    //PORTB = PORTB | FIFO_WRITE_ENABLE;
-//    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
-//    PORTF = (channel & 0xFF); // Present byte 1 to Port F
-//    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
-//
-//    //PORTF = (timeMs  & 0xFF);              //2nd byte    
-//    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;       
-//    //PORTB = PORTB | FIFO_WRITE_ENABLE;
-//    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
-//    PORTF = (timeMs  & 0xFF); // Present byte 2 to Port F
-//    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
-//  
-//    //PORTF = (timeMs  & 0xFF00)>>8;         //3rd byte    
-//    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;        
-//    //PORTB = PORTB | FIFO_WRITE_ENABLE;
-//    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
-//    PORTF = (timeMs  & 0xFF00)>>8; // Present byte 3 to Port F
-//    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
-//
-//    //PORTF = (timeMs  & 0xFF0000)>>16;      //4th byte
-//    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;        
-//    //PORTB = PORTB | FIFO_WRITE_ENABLE;
-//    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
-//    PORTF = (timeMs  & 0xFF0000)>>16; // Present byte 4 to Port F
-//    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
-//    
-//    //PORTF = (timeMs  & 0xFF000000)>>24;    //5th byte    
-//    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
-//    //PORTB = PORTB | FIFO_WRITE_ENABLE;
-//    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
-//    PORTF = (timeMs  & 0xFF000000)>>24; // Present byte 5 to Port F
-//    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
-//    
-//    //PORTF = (peakCH2 & 0xFF);              //6th byte
-//    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
-//    //PORTB = PORTB | FIFO_WRITE_ENABLE;
-//    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
-//    PORTF = (peakCH3 & 0xFF); // Present byte 6 to Port F
-//    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
-//    
-//    //PORTF = (peakCH2 & 0xFF00)>>8;         //7th byte    
-//    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
-//    //PORTB = PORTB | FIFO_WRITE_ENABLE;
-//    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
-//    PORTF = (peakCH3 & 0xFF00)>>8; // Present byte 7 to Port F
-//    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state    
-//    
-//    //PORTF = (tempRaw & 0xFF);              //8th byte
-//    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
-//    //PORTB = PORTB | FIFO_WRITE_ENABLE;
-//    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
-//    PORTF = (tempRaw & 0xFF); // Present byte 8 to Port F
-//    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
-//    
-//    //PORTF = (tempRaw & 0xFF00)>>8;         //9th byte
-//    //PORTB = PORTB & ~FIFO_WRITE_ENABLE;         
-//    //PORTB = PORTB | FIFO_WRITE_ENABLE;
-//    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
-//    PORTF = (tempRaw & 0xFF00)>>8; // Present byte 9 to Port F
-//    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
+
+    send_data(channel, timeMs, peakCH3, tempRaw);
         
     // Debugging
     Serial.println((channel & 0xFF),            BIN); // [1st byte]
@@ -522,6 +411,9 @@ void loop() {
 //    peakCH4 += SPI.transfer(0);
 //    digitalWrite(ADCchipSelect, HIGH);
 //
+//    send_data(channel, timeMS, peakCH4, tempRaw);
+
+
 //    // Reset peak detector
 //    digitalWrite(RESET_CH4, HIGH);
 //    delayMicroseconds(5);
@@ -536,3 +428,107 @@ void loop() {
 //  }
 
 }
+
+
+void read_ADC(){
+  
+    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
+    SPI.transfer(MANUAL_READ_ADDR << 1);
+    SPI.transfer(READ_CH3);
+    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
+  
+}
+
+ADC_data get_data(byte read_channel){
+ 
+    uint16_t peak_value;
+    
+    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
+    SPI.transfer(MANUAL_READ_ADDR << 1);
+    SPI.transfer(READ_CH3);
+    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
+      
+    // Read temp sensor
+
+    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
+    SPI.transfer(MANUAL_READ_ADDR << 1);
+    SPI.transfer(READ_TEMP);
+    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
+
+    // Get channel 3 data
+//    digitalWrite(9, LOW);
+//    peak_value = SPI.transfer(0) & 0x0F;
+//    peak_value = peakCH3 << 8;
+//    peak_value += SPI.transfer(0);
+//    digitalWrite(9, HIGH);
+    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
+    peakCH3 = SPI.transfer(0) & 0x0F;
+    peakCH3 = peakCH3 << 8;
+    peakCH3 += SPI.transfer(0);
+    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
+    
+    // Get temp sensor data
+//    digitalWrite(9, LOW);
+//    tempRaw = SPI.transfer(0) & 0x0F;
+//    tempRaw = tempRaw << 8;
+//    tempRaw += SPI.transfer(0);
+//    digitalWrite(9, HIGH);
+    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
+    tempRaw = SPI.transfer(0) & 0x0F;
+    tempRaw = tempRaw << 8;
+    tempRaw += SPI.transfer(0);
+    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
+
+    // Reset the peak detector. PH3 (the 4th bit of Port H) is the CH3 reset signal.
+//    digitalWrite(6, HIGH);
+//    delayMicroseconds(5);
+//    digitalWrite(6, LOW);
+    PORTH = PORTH | PK_RST3; // Toggle PK_RST3 HIGH
+    delayMicroseconds(5);
+    PORTH = PORTH & ~PK_RST3; // Toggle PK_RST3 LOW
+
+  
+}
+
+
+
+void send_data(uint8_t channel, unsigned long timeMS, uint16_t peak, uint16_t tempRaw){
+ 
+    PORTF = (channel & 0xFF);              //1st byte
+    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
+    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
+
+    PORTF = (timeMs  & 0xFF);              //2nd byte        
+    PORTH = PORTH & ~FIFO_WR; 
+    PORTH = PORTH |  FIFO_WR; 
+  
+    PORTF = (timeMs  & 0xFF00)>>8;         //3rd byte        
+    PORTH = PORTH & ~FIFO_WR;
+    PORTH = PORTH |  FIFO_WR;
+
+    PORTF = (timeMs  & 0xFF0000)>>16;      //4th byte    
+    PORTH = PORTH & ~FIFO_WR;
+    PORTH = PORTH |  FIFO_WR;
+    
+    PORTF = (timeMs  & 0xFF000000)>>24;    //5th byte       
+    PORTH = PORTH & ~FIFO_WR;
+    PORTH = PORTH |  FIFO_WR;
+    
+    PORTF = (peak & 0xFF);              //6th byte    
+    PORTH = PORTH & ~FIFO_WR;
+    PORTH = PORTH |  FIFO_WR;
+    
+    PORTF = (peak & 0xFF00)>>8;         //7th byte        
+    PORTH = PORTH & ~FIFO_WR;
+    PORTH = PORTH |  FIFO_WR;
+    
+    PORTF = (tempRaw & 0xFF);              //8th byte    
+    PORTH = PORTH & ~FIFO_WR;
+    PORTH = PORTH |  FIFO_WR;
+    
+    PORTF = (tempRaw & 0xFF00)>>8;         //9th byte    
+    PORTH = PORTH & ~FIFO_WR;
+    PORTH = PORTH |  FIFO_WR;
+}
+
+
