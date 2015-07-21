@@ -1,4 +1,5 @@
 #include <SPI.h>
+#include <Wire.h>
 #include "atmega2560.h"
 #include <avr/interrupt.h>
 
@@ -30,12 +31,11 @@
 // FIFO full flag. Pin 88 on the ATmega2560
 volatile bool FIFO_full_flag = false;
 
-// Timestamps
+// Timing Definitions and Declarations
+#define gpsPV 47              // GPS Position Valid     Port D Pin 4
+#define gpsPulse 46           // GPS Pulse Per Second   Port D Pin 3
+#define DS3231addr 0x68       // RTC defined address    1101000    
 unsigned long timeMs = 0; // Time in milliseconds
-
-//etc.
-//etc.
-//etc.
 
 
 //uint16_t tempRaw = 0; // A/D converter's internal temp sensor
@@ -101,6 +101,20 @@ void setup() {
   Serial.begin(115200); Serial.flush();
   Serial.println("channel,timeMs,peak,temperature");
   Serial.println("=============================");
+
+  // Initialize and configure I2C communication with RTC
+  Wire.begin(DS3231addr);
+  Wire.beginTransmission(DS3231addr);
+  Wire.write(0);
+  Wire.write(decToBcd(0));  // Second 0-59
+  Wire.write(decToBcd(0));  // Minute 0-59
+  Wire.write(decToBcd(0));  // Hour 0-23 
+  Wire.write(decToBcd(1));  // Weekday 1-7
+  Wire.write(decToBcd(1));  // Monthday 1-31 + Century
+  Wire.write(decToBcd(1));  // Month 1-12
+  Wire.write(decToBcd(15)); // Year 00-99
+  Wire.write(byte(0));
+  Wire.endTransmission();
   
   // Set up Port H on the ATmega2560 as an output port. DDRH is the direction register for Port H.
   DDRH = DDRH | B01111111;
