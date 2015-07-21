@@ -8,7 +8,7 @@
 
 // 2 interrupts(0 and 1 which are PD0 and PD1), 2 regular inputs, and 3 outputs (PD4, PD6, PD7)
  
-volatile bool flush_fifo_flag = false;
+volatile bool read_fifo_flag = false;
 volatile bool half_full_flag = false;
 volatile bool address_valid_flag = false;
 volatile bool IOR_flag = false;
@@ -26,7 +26,7 @@ void bale_handler(){
   IOR_flag = PINC & IOR;
   
   if (address_valid_flag && IOR_flag){
-    flush_fifo_flag = true;
+    read_fifo_flag = true;
   }
 
   address_valid_flag = false;
@@ -43,10 +43,10 @@ void setup() {
 
 void loop() {
   
-  if (flush_fifo_flag){
+  if (read_fifo_flag){
     PORTF = PORTF & ~FIFO_READ_ENABLE & ~OUTPUT_ENABLE;  // set read_enable and output_enable, active LOW
     PORTF = PORTF | FIFO_READ_ENABLE | OUTPUT_ENABLE; // turn off read_enable, output_enable
-    flush_fifo_flag = false;
+    read_fifo_flag = false;
   }
   
   if (half_full_flag){ // just turns off everything that half_full_handler turns on
