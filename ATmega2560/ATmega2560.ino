@@ -142,10 +142,10 @@ void setup() {
   PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
 
   // Initialize data structs
-  data_ch1.channel = 1;
-  data_ch2.channel = 2;
-  data_ch3.channel = 3;
-  data_ch4.channel = 4;
+  data_ch1.channel = READ_CH1;
+  data_ch2.channel = READ_CH2;
+  data_ch3.channel = READ_CH3;
+  data_ch4.channel = READ_CH4;
   
   data_ch1.reset = PK_RST1;
   data_ch2.reset = PK_RST2;
