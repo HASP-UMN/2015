@@ -96,7 +96,7 @@ void setup() {
   SPI.setClockDivider(SPI_CLOCK_DIV2);  // 8 Mhz SPI clock
   SPI.setBitOrder(MSBFIRST);            // Most-significant bit first
   SPI.setDataMode(SPI_MODE0);           // Clock Polarity = 0; clock phase = 0
-  
+
   // Open serial port
   Serial.begin(115200); Serial.flush();
   Serial.println("channel,timeMs,peak,temperature");
@@ -113,11 +113,13 @@ void setup() {
   // Initialize the digital outputs on Port F to low. PORTF is the register for the state of the outputs.
   PORTF = B00000000;
   
+ 
   // PORT K (FIFO full flag on PK1)
   DDRK   = DDRK   & ~B00000010;    // Set PK1 as input
   PORTK  = PORTK  |  B00000010;    // Activate PULL UP resistor
   PCMSK1 = PCMSK1 |  B00000010;    // Enable PCINT17 on PK1
   PCICR  = PCICR  | (1<<PCIE2);    // Activate interrupt on enabled PCINT23-16
+ 
 
 // PORT E (CH[1-4] threshhold discriminators)
   DDRE  = DDRE  & ~B11110000;  /* Set PE7 (DISCRIMINATOR1) as input */
@@ -128,7 +130,7 @@ void setup() {
   sei(); /* Enables global interrupts ( cli(); is used to disable interrupts ). */
    
   // Reset the FIFO.
-  PORTH |= FIFO_WR; // set FIFO_WR high before resetting
+  //PORTH |= FIFO_WR; // set FIFO_WR high before resetting
   PORTH &= ~FIFO_RST; // Toggle FIFO_RST pin from HIGH to LOW
   PORTH = PORTH |  FIFO_RST; // Toggle FIFO_RST pin from LOW to HIGH  
 
@@ -150,17 +152,6 @@ void setup() {
   data_ch3.reset = PK_RST3;
   data_ch4.reset = PK_RST4;
 
-  // Print data header
-  Serial.print("channel"); Serial.print(',');
-  Serial.print("timeMs");  Serial.print(',');
-  Serial.print("peak");    Serial.print(',');
-  Serial.println("temperature");
-
-  // Open serial port
-  Serial.begin(115200); Serial.flush();
-  Serial.println("channel,timeMs,peak,temperature");
-  Serial.println("=============================");
-
 }
 
 void loop() {
@@ -176,14 +167,13 @@ void loop() {
     timeMs = millis();  // Get timestamp in milliseconds
     data_ch1 = get_data(data_ch1);
     //send_data(data_ch1.channel, timeMs, data_ch1.peak_val, data_ch1.tempRaw);
-    
     //debugging print statements in function below
     print_debug(data_ch1, "1", timeMs);
     
     // Reset peak value and interrupt flag for CH1
     newEventCH1 = false;
     data_ch1.peak_val = 0;
-//    delay(1000);
+    delay(100);
   }
 
   if (newEventCH2) {
@@ -198,7 +188,7 @@ void loop() {
     // Reset peak value and interrupt flag for CH2
     newEventCH2 = false;
     data_ch2.peak_val = 0;
-//    delay(1000);
+    delay(100);
   }
 
   if (newEventCH3) {
@@ -213,7 +203,7 @@ void loop() {
     // Reset peak value and interrupt flag for CH3
     newEventCH3 = false;
     data_ch3.peak_val = 0;
-//    delay(1000);    
+    delay(100);    
   }
 
   if (newEventCH4) {
@@ -228,7 +218,7 @@ void loop() {
     // Reset peak value and interrupt flag for CH4
     newEventCH4 = false;
     data_ch4.peak_val = 0;
- //   delay(1000);
+    delay(100);
   }
  
 }
@@ -257,7 +247,7 @@ ADC_data get_data(ADC_data data) {
     
     // Get temp sensor data
     PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
-    data.tempRaw = SPI.transfer(0) & 0x0F;
+    data.tempRaw = SPI.transfer(0) & 0xFF;
     data.tempRaw = data.tempRaw << 8;
     data.tempRaw += SPI.transfer(0);
     PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
@@ -316,7 +306,8 @@ void print_debug(ADC_data data, char* channel_char, unsigned long timeMs){
   
     Serial.print(channel_char);    Serial.print(',');
     Serial.print(timeMs); Serial.print(',');
-    Serial.println(tempRaw); Serial.println(" ");
+    Serial.print(peak_val); Serial.print(",");
+    Serial.println(tempRaw);
 
 //    Serial.println((channel & 0xFF),            BIN); // [1st byte]
 //    Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
