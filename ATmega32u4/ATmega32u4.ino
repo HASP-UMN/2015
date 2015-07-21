@@ -34,11 +34,11 @@ void bale_handler(){
 }
 
 void setup() {
-  
+  PORTF |= FIFO_READ_ENABLE; // setting read_enable high initially; this is a requirement so that the FIFO can be reset correctly by atmega2560
   DDRF = IRQ_OUT | OUTPUT_ENABLE | FIFO_READ_ENABLE;  //set pins to output mode
   attachInterrupt(HALF_FULL_INT, half_full_handler, RISING); 
   attachInterrupt(BALE_INT, bale_handler, RISING); 
-  PORTF |= FIFO_READ_ENABLE; // setting read_enable high initially; this is a requirement so that the FIFO can be reset correctly by atmega2560
+  
 }
 
 void loop() {

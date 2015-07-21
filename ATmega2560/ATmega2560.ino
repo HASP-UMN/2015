@@ -112,7 +112,6 @@ void setup() {
   DDRF = DDRF | B11111111;
   // Initialize the digital outputs on Port F to low. PORTF is the register for the state of the outputs.
   PORTF = B00000000;
-  
  
   // PORT K (FIFO full flag on PK1)
   DDRK   = DDRK   & ~B00000010;    // Set PK1 as input
@@ -130,7 +129,7 @@ void setup() {
   sei(); /* Enables global interrupts ( cli(); is used to disable interrupts ). */
    
   // Reset the FIFO.
-  //PORTH |= FIFO_WR; // set FIFO_WR high before resetting
+  PORTH |= FIFO_WR; // set FIFO_WR high before resetting
   PORTH &= ~FIFO_RST; // Toggle FIFO_RST pin from HIGH to LOW
   PORTH = PORTH |  FIFO_RST; // Toggle FIFO_RST pin from LOW to HIGH  
 
@@ -142,16 +141,20 @@ void setup() {
   PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
 
   // Initialize data structs
-  data_ch1.channel = READ_CH1;
-  data_ch2.channel = READ_CH2;
-  data_ch3.channel = READ_CH3;
-  data_ch4.channel = READ_CH4;
+  data_ch1.read_channel = READ_CH1;
+  data_ch2.read_channel = READ_CH2;
+  data_ch3.read_channel = READ_CH3;
+  data_ch4.read_channel = READ_CH4;
+  
+  data_ch1.send_channel = 1;
+  data_ch2.send_channel = 2;
+  data_ch3.send_channel = 3;
+  data_ch4.send_channel = 4;
   
   data_ch1.reset = PK_RST1;
   data_ch2.reset = PK_RST2;
   data_ch3.reset = PK_RST3;
   data_ch4.reset = PK_RST4;
-
 }
 
 void loop() {
@@ -166,7 +169,8 @@ void loop() {
     
     timeMs = millis();  // Get timestamp in milliseconds
     data_ch1 = get_data(data_ch1);
-    //send_data(data_ch1.channel, timeMs, data_ch1.peak_val, data_ch1.tempRaw);
+    send_data(data_ch1.send_channel, timeMs, data_ch1.peak_val, data_ch1.tempRaw);
+    
     //debugging print statements in function below
     print_debug(data_ch1, "1", timeMs);
     
@@ -180,7 +184,7 @@ void loop() {
     
     timeMs = millis();  // Get timestamp in milliseconds
     data_ch2 = get_data(data_ch2);
-    //send_data(data_ch2.channel, timeMs, data_ch2.peak_val, data_ch2.tempRaw);
+    send_data(data_ch2.send_channel, timeMs, data_ch2.peak_val, data_ch2.tempRaw);
     
     //debugging print statements in function below
     print_debug(data_ch2, "2", timeMs); 
@@ -195,7 +199,7 @@ void loop() {
     
     timeMs = millis();  // Get timestamp in milliseconds
     data_ch3 = get_data(data_ch3);
-    //send_data(data_ch3.channel, timeMs, data_ch3.peak_val, data_ch3.tempRaw);    
+    send_data(data_ch3.send_channel, timeMs, data_ch3.peak_val, data_ch3.tempRaw);    
     
     //debugging print statements in function below
     print_debug(data_ch3, "3", timeMs);   
@@ -210,7 +214,7 @@ void loop() {
     
     timeMs = millis();  // Get timestamp in milliseconds
     data_ch4 = get_data(data_ch4);  
-    //send_data(data_ch4.channel, timeMs, data_ch4.peak_val, data_ch4.tempRaw);    
+    send_data(data_ch4.send_channel, timeMs, data_ch4.peak_val, data_ch4.tempRaw);    
     
     //debugging print statements in function below
     print_debug(data_ch4, "4", timeMs);
@@ -228,7 +232,7 @@ ADC_data get_data(ADC_data data) {
     
     PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
     SPI.transfer(MANUAL_READ_ADDR << 1);
-    SPI.transfer(data.channel);
+    SPI.transfer(data.read_channel);
     PORTH = PORTH | ADC_CS; // Toggle ADC_CS HIGH
       
     // Read temp sensor
@@ -296,11 +300,10 @@ void send_data(uint8_t channel, unsigned long timeMs, uint16_t peak, uint16_t te
     PORTF = (tempRaw & 0xFF00)>>8;         //9th byte    
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
-    
 }
 
 void print_debug(ADC_data data, char* channel_char, unsigned long timeMs){
-  uint8_t  channel = data.channel;
+  uint8_t  channel = data.read_channel;
   uint16_t peak_val = data.peak_val;
   uint16_t tempRaw = data.tempRaw;
   
