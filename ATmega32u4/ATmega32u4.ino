@@ -5,10 +5,9 @@
 #define IOR B01000000// from Tomcat, PC6
 #define ADDR_VALID B10000000 // from decoder/Tomcat, PC7
 #define IRQ_OUT B00000010 // to tomcat, PF1
-
-// 2 interrupts(0 and 1 which are PD0 and PD1), 2 regular inputs, and 3 outputs (PD4, PD6, PD7)
+#define IOCHRDY B00010000 // to tomcat, PF4
  
-volatile bool read_fifo_flag = false;
+volatile bool bale_int_flag = false;
 volatile bool half_full_flag = false;
 volatile bool address_valid_flag = false;
 volatile bool IOR_flag = false;
@@ -17,7 +16,6 @@ void half_full_handler(){
   
   PORTF = PORTF | IRQ_OUT; //sets PF1 (IRQ_OUT);
   half_full_flag = true;
-  //PORTF = PORTF & ~IRQ_OUT; // turn off IRQ line
 }
 
 void bale_handler(){
@@ -26,7 +24,8 @@ void bale_handler(){
   IOR_flag = PINC & IOR;
   
   if (address_valid_flag && IOR_flag){
-    read_fifo_flag = true;
+    PORTF = PORTF & ~IOCHRDY; // active low
+    bale_int_flag = true;
   }
 
   address_valid_flag = false;
@@ -35,17 +34,20 @@ void bale_handler(){
 
 void setup() {
   DDRF = IRQ_OUT | OUTPUT_ENABLE | FIFO_READ_ENABLE;  //set pins to output mode
-  PORTF |= FIFO_READ_ENABLE; // setting read_enable high initially; this is a requirement so that the FIFO can be reset correctly by atmega2560
+  PORTF = PORTF | FIFO_READ_ENABLE | IOCHRDY; // setting read_enable high initially; this is a requirement so that the FIFO can be reset correctly by atmega2560
+  // also setting IOCHRDY high by default, it is active low
+  
   attachInterrupt(HALF_FULL_INT, half_full_handler, FALLING); // this line is active low from FIFO 
   attachInterrupt(BALE_INT, bale_handler, RISING);   
 }
 
 void loop() {
   
-  if (read_fifo_flag){
+  if (bale_int_flag){
     PORTF = PORTF & ~FIFO_READ_ENABLE & ~OUTPUT_ENABLE;  // set read_enable and output_enable, active LOW
+    PORTF = PORTF | IOCHRDY; // alerts tomcat that data should be available on ISA bus
     PORTF = PORTF | FIFO_READ_ENABLE | OUTPUT_ENABLE; // turn off read_enable, output_enable
-    read_fifo_flag = false;
+    bale_int_flag = false;
   }
   
   if (half_full_flag){ // just turns off everything that half_full_handler turns on
