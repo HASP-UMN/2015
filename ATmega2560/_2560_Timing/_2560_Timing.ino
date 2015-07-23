@@ -17,10 +17,10 @@
 #include <Wire.h>
 
 // Definitions
-#define gpsPV 47              // GPS Position Valid     Port D Pin 4
-#define gpsPulse 46           // GPS Pulse Per Second   Port D Pin 3
-#define rtcPulse 45           // RTC Square Wave Pulse  Port D Pin 2
 #define DS3231addr 0x68       // RTC defined address    1101000    
+#define gpsPV 47              // GPS Position Valid     Port D Pin 4
+#define gpsPPS 46             // GPS Pulse Per Second   Port D Pin 3
+#define clk_sel 41            // Clock Select           Port L Pin 6
 
 // Variables
 volatile uint32_t usec;
@@ -31,8 +31,6 @@ volatile uint16_t time_uSec;
 // Interrupts
 void realTimeISR(){usec_offset = micros();} // While GPS position NOT VALID rtc 1hz pulse drives time
 void gpsPulseISR(){usec_offset = micros();} // While GPS position VALID, gps 1hz pulse drives time
-void gpsPVonISR(){detachInterrupt(rtcPulse); attachInterrupt(gpsPulse, gpsPulseISR, RISING);} // Switches ownership of time to gpsPulse
-void gpsPVoffISR(){detachInterrupt(gpsPulse); attachInterrupt(rtcPulse, realTimeISR, FALLING);} // Switches ownership of time to rtcPulse
 
 void setup(){
   Serial.begin(115200);// Sets up SerialMonitor only. Not needed for flight.

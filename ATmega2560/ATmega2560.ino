@@ -2,7 +2,6 @@
 #include <Wire.h>
 #include "atmega2560.h"
 #include "DS3231.h"
-#include <avr/interrupt.h>
 
 // Addresses and commands for A/D operation (SPI interface). See ADS8634 datasheet.
 #define ADC_CONFIG       0B00000110 // Enable internal Vref and temperature sensor.
@@ -19,8 +18,9 @@
 #define DISCRIMINATOR2 6 // INT6: Channel 2 discrimintor.
 #define DISCRIMINATOR3 5 // INT5: Channel 3 discrimintor.
 #define DISCRIMINATOR4 4 // INT4: Channel 4 discrimintor.
+#define gpsPPS 3         // INT3: GPS Pulse Per Second   Port D Pin 3
 
-// Port masks for Port H
+  // Port masks for Port H
 #define ADC_CS   0B01000000
 #define PK_RST1  0B00100000
 #define PK_RST2  0B00010000
@@ -33,12 +33,11 @@
 volatile bool FIFO_full_flag = false;
 
 // Timing Definitions and Declarations
-#define DS3231addr 0x68       // RTC defined address    1101000    
 #define gpsPV 47              // GPS Position Valid     Port D Pin 4
-#define gpsPPS 46             // GPS Pulse Per Second   Port D Pin 3
 #define clk_sel 41            // Clock Select           Port L Pin 6
-uint32_t ticCount = 0;
-void gpsPPSISR(){usec_offset = micros(); ticCount++;}
+volatile uint32_t ticCount = 0;
+//void gpsPPS_ISR(){usec_offset = micros(); ticCount++;}
+
 unsigned long timeMs = 0; // Time in milliseconds
 
 
@@ -92,6 +91,10 @@ ISR(INT4_vect) {
   // Ignore new events if another event (on any channel) is currently being processed
   
 }
+ISR(INT3_vect){// For gpsPPS
+  usec_offset = micros(); 
+  ticCount++;  
+  }
 
 
 void setup() {  
@@ -101,28 +104,15 @@ void setup() {
   SPI.setBitOrder(MSBFIRST);            // Most-significant bit first
   SPI.setDataMode(SPI_MODE0);           // Clock Polarity = 0; clock phase = 0
 
+    // Timing Devices and Setup
+  RTC_INIT();
+  
   // Open serial port
   Serial.begin(115200); Serial.flush();
+  RTC_PRINT_TIME();
   Serial.println("Channel, TimeMs, Peak, ADC Temp, RTC Time");
   Serial.println("=========================================");
 
-  // Initialize RTC
-  RTC_INIT();
-
-  // Initialize and configure I2C communication with RTC
-  Wire.begin(DS3231addr);
-  Wire.beginTransmission(DS3231addr);
-  Wire.write(0);
-  Wire.write(decToBcd(0));  // Second 0-59
-  Wire.write(decToBcd(0));  // Minute 0-59
-  Wire.write(decToBcd(0));  // Hour 0-23 
-  Wire.write(decToBcd(1));  // Weekday 1-7
-  Wire.write(decToBcd(1));  // Monthday 1-31 + Century
-  Wire.write(decToBcd(1));  // Month 1-12
-  Wire.write(decToBcd(15)); // Year 00-99
-  Wire.write(byte(0));
-  Wire.endTransmission();
-  
   // Set up Port H on the ATmega2560 as an output port. DDRH is the direction register for Port H.
   DDRH = DDRH | B01111111;
   // Initialize the digital outputs. PORTH is the register for the state of the outputs.
@@ -140,12 +130,15 @@ void setup() {
   PCMSK1 = PCMSK1 |  B00000010;    // Enable PCINT17 on PK1
   PCICR  = PCICR  | (1<<PCIE2);    // Activate interrupt on enabled PCINT23-16
  
-
+//PORT D (gpsPPS and gpsPV)
+  DDRD = DDRD | B00011000;
+  EICRA = B11000000; //Set INT3 to be rising edge
+ 
 // PORT E (CH[1-4] threshhold discriminators)
   DDRE  = DDRE  & ~B11110000;  /* Set PE7 (DISCRIMINATOR1) as input */
   PORTE = PORTE & ~B11110000;  /* Activate PULL DOWN resistors */
   EICRB = B11111111; // Set INT[4-7] to be on their rising edges
-  EIMSK = B11110000; // Enable INT[4-7]
+  EIMSK = B11111000; // Enable INT[3-7] (3 = gpsPPS)
   
   sei(); /* Enables global interrupts ( cli(); is used to disable interrupts ). */
    
@@ -245,7 +238,12 @@ void loop() {
     data_ch4.peak_val = 0;
     delay(100);
   }
- 
+//////////////////////////////////////
+// Time Debugging zone
+
+// Serial.println(ticCount);
+
+//////////////////////////////////////
 }
 
 
