@@ -33,9 +33,12 @@
 volatile bool FIFO_full_flag = false;
 
 // Timing Definitions and Declarations
-#define gpsPV 47              // GPS Position Valid     Port D Pin 4
-#define gpsPulse 46           // GPS Pulse Per Second   Port D Pin 3
 #define DS3231addr 0x68       // RTC defined address    1101000    
+#define gpsPV 47              // GPS Position Valid     Port D Pin 4
+#define gpsPPS 46             // GPS Pulse Per Second   Port D Pin 3
+#define clk_sel 41            // Clock Select           Port L Pin 6
+uint32_t ticCount = 0;
+void gpsPPSISR(){usec_offset = micros(); ticCount++;}
 unsigned long timeMs = 0; // Time in milliseconds
 
 
