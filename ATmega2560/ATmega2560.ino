@@ -1,6 +1,7 @@
 #include <SPI.h>
 #include <Wire.h>
 #include "atmega2560.h"
+#include "DS3231.h"
 #include <avr/interrupt.h>
 
 // Addresses and commands for A/D operation (SPI interface). See ADS8634 datasheet.
@@ -99,8 +100,11 @@ void setup() {
 
   // Open serial port
   Serial.begin(115200); Serial.flush();
-  Serial.println("channel,timeMs,peak,temperature");
-  Serial.println("=============================");
+  Serial.println("Channel, TimeMs, Peak, ADC Temp, RTC Time");
+  Serial.println("=========================================");
+
+  // Initialize RTC
+  RTC_INIT();
 
   // Initialize and configure I2C communication with RTC
   Wire.begin(DS3231addr);
@@ -321,10 +325,11 @@ void print_debug(ADC_data data, char* channel_char, unsigned long timeMs){
   uint16_t peak_val = data.peak_val;
   uint16_t tempRaw = data.tempRaw;
   
-    Serial.print(channel_char);    Serial.print(',');
-    Serial.print(timeMs); Serial.print(',');
-    Serial.print(peak_val); Serial.print(",");
-    Serial.println(tempRaw);
+    Serial.print(channel_char); Serial.print(", ");
+    Serial.print(timeMs); Serial.print(", ");
+    Serial.print(peak_val); Serial.print(", ");
+    Serial.print(tempRaw); Serial.print(", ");
+    RTC_PRINT_TIME();
 
 //    Serial.println((channel & 0xFF),            BIN); // [1st byte]
 //    Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
@@ -338,3 +343,4 @@ void print_debug(ADC_data data, char* channel_char, unsigned long timeMs){
 //    Serial.println("---------------------------------------------");  
   
 }
+
