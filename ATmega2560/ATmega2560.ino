@@ -130,10 +130,13 @@ void setup() {
   EICRB = B11111111; // Set INT[4-7] to be on their rising edges
   EIMSK = B11110000; // Enable INT[4-7] 
   
-  //PORT D (GPS_PPS and GPS_PV)
-  DDRD = DDRD | B00011100;         // Sets PE3 & PE4 as inputs
+  // PORT D (GPS_PPS and GPS_PV Input Pins)
+  DDRD = DDRD | B00011000;         // Sets PE3 & PE4 as inputs
   EICRA = B11000000;               // Set INT3 to be rising edge
-  EIMSK = EIMSK | B00001000;     // Enables INT[3]
+  EIMSK = EIMSK | B00001000;       // Enables INT[3]
+
+  // TIMER Setup
+  // TCCR5 = 
   
   sei(); /* Enables global interrupts ( cli(); is used to disable interrupts ). */
    
@@ -168,7 +171,8 @@ void setup() {
   delay(60000); // Allows 32U4 to set up before sending data.
 
   // Start RTC and send System Start Time to FIFO
-  RTC_INIT();
+  Wire.begin(DS3231);   // Initializes RTC
+  //RTC_INIT_SQW();       // Initializes RTC "1Hz" Square Wave
   //send_data(0,RTC_GET_USEC(),0,0); DEVELOP SPECIAL PACKET TO SEND THAT TELLS TOMCAT WHEN SYSTEM STARTED TICs
   ticCount = 0;
 }
@@ -240,11 +244,6 @@ void loop() {
     data_ch4.peak_val = 0;
     delay(100);
   }
-/////////////////////////////////////////////////////////////////////
-RTC_PRINT_TIME();
-Serial.println(ticCount);
-delay(200);
-/////////////////////////////////////////////////////////////////////  
 }
 
 
