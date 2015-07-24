@@ -165,7 +165,7 @@ void setup() {
   data_ch3.reset = PK_RST3;
   data_ch4.reset = PK_RST4;
 
-  delay(10); // Allows 32U4 to set up before sending data.
+  delay(60000); // Allows 32U4 to set up before sending data.
 
   // Start RTC and send System Start Time to FIFO
   RTC_INIT();
