@@ -18,7 +18,7 @@
 #define DISCRIMINATOR2 6 // INT6: Channel 2 discrimintor.
 #define DISCRIMINATOR3 5 // INT5: Channel 3 discrimintor.
 #define DISCRIMINATOR4 4 // INT4: Channel 4 discrimintor.
-#define gpsPPS 3         // INT3: GPS Pulse Per Second   Port D Pin 3
+#define GPS_PPS 3         // INT3: GPS Pulse Per Second   Port D Pin 3
 
   // Port masks for Port H
 #define ADC_CS   0B01000000
@@ -33,12 +33,10 @@
 volatile bool FIFO_full_flag = false;
 
 // Timing Definitions and Declarations
-#define gpsPV 47              // GPS Position Valid     Port D Pin 4
-#define clk_sel 41            // Clock Select           Port L Pin 6
-volatile uint32_t ticCount = 0;
-//void gpsPPS_ISR(){usec_offset = micros(); ticCount++;}
-
-unsigned long timeMs = 0; // Time in milliseconds
+#define GPS_PV 47              // GPS Position Valid     Port D Pin 4
+#define clk_sel 41             // Clock Select           Port L Pin 6
+uint32_t ticCount = 0;
+uint32_t timeMs = 0; // Time in milliseconds
 
 
 //uint16_t tempRaw = 0; // A/D converter's internal temp sensor
@@ -62,7 +60,6 @@ void FIFO_FF_ISR() {
   // indicating that the device is full. If the read pointer is not moved
   // after Reset (RS), the Full-Flag (FF) will go LOW after 256 writes for
   // IDT7200, 512 writes for the IDT7201A and 1,024 writes for the IDT7202A.
-  
 }
 
 
@@ -91,7 +88,8 @@ ISR(INT4_vect) {
   // Ignore new events if another event (on any channel) is currently being processed
   
 }
-ISR(INT3_vect){// For gpsPPS
+// Interrupt Service Routine for GPS_PPS
+ISR(INT3_vect) {
   usec_offset = micros(); 
   ticCount++;  
   }
@@ -103,14 +101,10 @@ void setup() {
   SPI.setClockDivider(SPI_CLOCK_DIV2);  // 8 Mhz SPI clock
   SPI.setBitOrder(MSBFIRST);            // Most-significant bit first
   SPI.setDataMode(SPI_MODE0);           // Clock Polarity = 0; clock phase = 0
-
-    // Timing Devices and Setup
-  RTC_INIT();
   
   // Open serial port
   Serial.begin(115200); Serial.flush();
-  RTC_PRINT_TIME();
-  Serial.println("Channel, TimeMs, Peak, ADC Temp, RTC Time");
+  Serial.println("Channel, TimeMs, Peak, ADC Temp, Seconds");
   Serial.println("=========================================");
 
   // Set up Port H on the ATmega2560 as an output port. DDRH is the direction register for Port H.
@@ -130,15 +124,16 @@ void setup() {
   PCMSK1 = PCMSK1 |  B00000010;    // Enable PCINT17 on PK1
   PCICR  = PCICR  | (1<<PCIE2);    // Activate interrupt on enabled PCINT23-16
  
-//PORT D (gpsPPS and gpsPV)
-  DDRD = DDRD | B00011000;
-  EICRA = B11000000; //Set INT3 to be rising edge
- 
-// PORT E (CH[1-4] threshhold discriminators)
+  // PORT E (CH[1-4] threshhold discriminators)
   DDRE  = DDRE  & ~B11110000;  /* Set PE7 (DISCRIMINATOR1) as input */
   PORTE = PORTE & ~B11110000;  /* Activate PULL DOWN resistors */
   EICRB = B11111111; // Set INT[4-7] to be on their rising edges
-  EIMSK = B11111000; // Enable INT[3-7] (3 = gpsPPS)
+  EIMSK = B11110000; // Enable INT[4-7] 
+  
+  //PORT D (GPS_PPS and GPS_PV)
+  DDRD = DDRD | B00011100;         // Sets PE3 & PE4 as inputs
+  EICRA = B11000000;               // Set INT3 to be rising edge
+  EIMSK = EIMSK | B00001000;     // Enables INT[3]
   
   sei(); /* Enables global interrupts ( cli(); is used to disable interrupts ). */
    
@@ -169,6 +164,13 @@ void setup() {
   data_ch2.reset = PK_RST2;
   data_ch3.reset = PK_RST3;
   data_ch4.reset = PK_RST4;
+
+  delay(10); // Allows 32U4 to set up before sending data.
+
+  // Start RTC and send System Start Time to FIFO
+  RTC_INIT();
+  //send_data(0,RTC_GET_USEC(),0,0); DEVELOP SPECIAL PACKET TO SEND THAT TELLS TOMCAT WHEN SYSTEM STARTED TICs
+  ticCount = 0;
 }
 
 void loop() {
@@ -238,12 +240,11 @@ void loop() {
     data_ch4.peak_val = 0;
     delay(100);
   }
-//////////////////////////////////////
-// Time Debugging zone
-
-// Serial.println(ticCount);
-
-//////////////////////////////////////
+/////////////////////////////////////////////////////////////////////
+RTC_PRINT_TIME();
+Serial.println(ticCount);
+delay(200);
+/////////////////////////////////////////////////////////////////////  
 }
 
 
@@ -282,7 +283,7 @@ ADC_data get_data(ADC_data data) {
 }
 
 
-void send_data(uint8_t channel, unsigned long timeMs, uint16_t peak, uint16_t tempRaw) {
+void send_data(uint8_t channel, uint32_t timeMs, uint16_t peak, uint16_t tempRaw) {
  
     PORTF = (channel & 0xFF);              //1st byte
     PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
@@ -321,7 +322,7 @@ void send_data(uint8_t channel, unsigned long timeMs, uint16_t peak, uint16_t te
     PORTH = PORTH |  FIFO_WR;
 }
 
-void print_debug(ADC_data data, char* channel_char, unsigned long timeMs){
+void print_debug(ADC_data data, char* channel_char, uint32_t timeMs){
   uint8_t  channel = data.read_channel;
   uint16_t peak_val = data.peak_val;
   uint16_t tempRaw = data.tempRaw;
@@ -330,7 +331,7 @@ void print_debug(ADC_data data, char* channel_char, unsigned long timeMs){
     Serial.print(timeMs); Serial.print(", ");
     Serial.print(peak_val); Serial.print(", ");
     Serial.print(tempRaw); Serial.print(", ");
-    RTC_PRINT_TIME();
+
 
 //    Serial.println((channel & 0xFF),            BIN); // [1st byte]
 //    Serial.println((timeMs  & 0xFF),            BIN); // [2nd byte]
