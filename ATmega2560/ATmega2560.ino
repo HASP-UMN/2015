@@ -90,9 +90,23 @@ ISR(INT4_vect) {
 ISR(INT3_vect) {
   uSecOffset = micros(); 
   ticCount++;  
+<<<<<<< HEAD
   }  
   
 //debugging
+=======
+  }
+
+  // FOR TESTING
+ISR(INT1_vect) {
+  uSecOffset = micros(); 
+  ticCount++;  
+  }
+  
+  
+  
+///debugging
+>>>>>>> origin/master
 int debug_data_counter = 0;
 
 void setup() {  
@@ -190,7 +204,11 @@ void loop() {
     //send_data(data_ch1.send_channel, timeMs, data_ch1.peak_val, data_ch1.tempRaw);
     send_data_debug();
     //debugging print statements in function below
+<<<<<<< HEAD
     //print_debug(data_ch1, "1", timeMs);
+=======
+//    print_debug(data_ch1, "1", timeMs);
+>>>>>>> origin/master
     
     // Reset peak value and interrupt flag for CH1
     newEventCH1 = false;
@@ -282,13 +300,20 @@ ADC_data get_data(ADC_data data) {
 
 
 void send_data_debug(){
+<<<<<<< HEAD
   int i;
   for(i=0;i<16;i++){
+=======
+  
+>>>>>>> origin/master
     debug_data_counter++; 
     PORTF = debug_data_counter;              //1st byte
     PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
     PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
+<<<<<<< HEAD
   }
+=======
+>>>>>>> origin/master
 }
 
 void send_data(uint8_t channel, uint32_t timeMs, uint16_t peak, uint16_t tempRaw) {
