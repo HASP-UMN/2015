@@ -64,38 +64,33 @@ void FIFO_FF_ISR() {
   // IDT7200, 512 writes for the IDT7201A and 1,024 writes for the IDT7202A.
 }
 
-
 // Ch[1-4] interrupt service routines for threshhold discriminator signals
 ISR(INT7_vect) {
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH1 = true;
   // Ignore new events if another event (on any channel) is currently being processed
-  
 }
 ISR(INT6_vect) {
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH2 = true;
   // Ignore new events if another event (on any channel) is currently being processed
-  
 }
 ISR(INT5_vect) {
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH3 = true;
   // Ignore new events if another event (on any channel) is currently being processed
-  
 }
 ISR(INT4_vect) {
   if (!newEventCH1 && !newEventCH2 && !newEventCH3 && !newEventCH4)
     newEventCH4 = true;
   // Ignore new events if another event (on any channel) is currently being processed
-  
 }
+
 // Interrupt Service Routines for GPS_PPS
 ISR(INT3_vect) {
   uSecOffset = micros(); 
-  ticCount++;  
-  }
-
+  ticCount++;
+  }  
   // FOR TESTING
 ISR(INT1_vect) {
   uSecOffset = micros(); 
@@ -156,7 +151,7 @@ void setup() {
   PORTH &= ~FIFO_RST; // Toggle FIFO_RST pin from HIGH to LOW
   PORTH = PORTH |  FIFO_RST; // Toggle FIFO_RST pin from LOW to HIGH  
 
-    // Write A/D configuration register to enable internal Vref and temperature sensor 
+  // Write A/D configuration register to enable internal Vref and temperature sensor 
   PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
   delayMicroseconds(5);
   SPI.transfer(CONFIG_ADDR << 1); // Must shift address 1 bit left for write bit
@@ -189,17 +184,6 @@ void setup() {
 
 void loop() {
 
-
-////////////////////////////////////
-  RTC_PRINT_TIME();
-  unsigned long utemp = RTC_GET_USEC();
-  Serial.print("   ");
-  Serial.print(ticCount);
-  Serial.print(".");
-  Serial.println(utemp);
-  delay(100);
-////////////////////////////////////
-  
   if (FIFO_full_flag) {
      FIFO_full_flag = false;
      // if the FF flag is set in the beginning of the loop (i.e. at boot or after a reset), unset it
@@ -305,11 +289,13 @@ ADC_data get_data(ADC_data data) {
 
 
 void send_data_debug(){
-  
+  int i;
+  for(i=0;i<16;i++){
     debug_data_counter++; 
     PORTF = debug_data_counter;              //1st byte
     PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
     PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
+  }
 }
 
 void send_data(uint8_t channel, uint32_t timeMs, uint16_t peak, uint16_t tempRaw) {
@@ -374,4 +360,3 @@ void print_debug(ADC_data data, char* channel_char, uint32_t timeMs){
 //    Serial.println("---------------------------------------------");  
   
 }
-
