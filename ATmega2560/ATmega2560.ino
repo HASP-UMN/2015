@@ -105,7 +105,7 @@ ISR(INT1_vect) {
   
   
 ///debugging
-int debug_data_counter = 0;
+byte debug_data_counter = 0;
 
 void setup() {  
   // Initialize and configure SPI bus for A/D communications

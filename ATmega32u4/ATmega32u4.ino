@@ -63,10 +63,10 @@ void setup() {
 
 void loop() {
 // just waiting for interrupts
-  Serial.print("HF: ");Serial.println(half_full_count);
+//  Serial.print("HF: ");Serial.println(half_full_count);
 //  Serial.print("Bale: "); Serial.println(bale_count);
 //  Serial.print("AV: "); Serial.println(av_count);
-  delay(500); 
+//  delay(500); 
   if (half_full_count > 0){
     for(i = 0; i < 512; i++){
       PORTF = PORTF & ~FIFO_READ_ENABLE;  //sets PF1 (IRQ_OUT);
