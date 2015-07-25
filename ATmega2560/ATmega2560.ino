@@ -101,6 +101,11 @@ ISR(INT1_vect) {
   uSecOffset = micros(); 
   ticCount++;  
   }
+  
+  
+  
+///debugging
+int debug_data_counter = 0;
 
 void setup() {  
   // Initialize and configure SPI bus for A/D communications
@@ -205,10 +210,10 @@ void loop() {
     
     timeMs = millis();  // Get timestamp in milliseconds
     data_ch1 = get_data(data_ch1);
-    send_data(data_ch1.send_channel, timeMs, data_ch1.peak_val, data_ch1.tempRaw);
-    
+    //send_data(data_ch1.send_channel, timeMs, data_ch1.peak_val, data_ch1.tempRaw);
+    send_data_debug();
     //debugging print statements in function below
-    print_debug(data_ch1, "1", timeMs);
+//    print_debug(data_ch1, "1", timeMs);
     
     // Reset peak value and interrupt flag for CH1
     newEventCH1 = false;
@@ -220,10 +225,10 @@ void loop() {
     
     timeMs = millis();  // Get timestamp in milliseconds
     data_ch2 = get_data(data_ch2);
-    send_data(data_ch2.send_channel, timeMs, data_ch2.peak_val, data_ch2.tempRaw);
-    
+//    send_data(data_ch2.send_channel, timeMs, data_ch2.peak_val, data_ch2.tempRaw);
+    send_data_debug();  
     //debugging print statements in function below
-    print_debug(data_ch2, "2", timeMs); 
+//    print_debug(data_ch2, "2", timeMs); 
 
     // Reset peak value and interrupt flag for CH2
     newEventCH2 = false;
@@ -235,10 +240,10 @@ void loop() {
     
     timeMs = millis();  // Get timestamp in milliseconds
     data_ch3 = get_data(data_ch3);
-    send_data(data_ch3.send_channel, timeMs, data_ch3.peak_val, data_ch3.tempRaw);    
-    
+   // send_data(data_ch3.send_channel, timeMs, data_ch3.peak_val, data_ch3.tempRaw);    
+    send_data_debug();;
     //debugging print statements in function below
-    print_debug(data_ch3, "3", timeMs);   
+//    print_debug(data_ch3, "3", timeMs);   
     
     // Reset peak value and interrupt flag for CH3
     newEventCH3 = false;
@@ -250,10 +255,10 @@ void loop() {
     
     timeMs = millis();  // Get timestamp in milliseconds
     data_ch4 = get_data(data_ch4);  
-    send_data(data_ch4.send_channel, timeMs, data_ch4.peak_val, data_ch4.tempRaw);    
-    
+   // send_data(data_ch4.send_channel, timeMs, data_ch4.peak_val, data_ch4.tempRaw);    
+    send_data_debug();
     //debugging print statements in function below
-    print_debug(data_ch4, "4", timeMs);
+//    print_debug(data_ch4, "4", timeMs);
 
     // Reset peak value and interrupt flag for CH4
     newEventCH4 = false;
@@ -297,6 +302,15 @@ ADC_data get_data(ADC_data data) {
     return data;       
 }
 
+
+
+void send_data_debug(){
+  
+    debug_data_counter++; 
+    PORTF = debug_data_counter;              //1st byte
+    PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
+    PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
+}
 
 void send_data(uint8_t channel, uint32_t timeMs, uint16_t peak, uint16_t tempRaw) {
  
