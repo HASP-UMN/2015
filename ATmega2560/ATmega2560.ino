@@ -18,7 +18,9 @@
 #define DISCRIMINATOR2 6 // INT6: Channel 2 discrimintor.
 #define DISCRIMINATOR3 5 // INT5: Channel 3 discrimintor.
 #define DISCRIMINATOR4 4 // INT4: Channel 4 discrimintor.
-#define GPS_PPS 3         // INT3: GPS Pulse Per Second   Port D Pin 3
+
+// GPS PPS Interrupt
+#define GPS_PPS 3        // INT3: GPS Pulse Per Second   Port D Pin 3
 
   // Port masks for Port H
 #define ADC_CS   0B01000000
@@ -35,7 +37,7 @@ volatile bool FIFO_full_flag = false;
 // Timing Definitions and Declarations
 #define GPS_PV 47              // GPS Position Valid     Port D Pin 4
 #define clk_sel 41             // Clock Select           Port L Pin 6
-uint32_t ticCount = 0;
+volatile uint32_t ticCount = 0;
 uint32_t timeMs = 0; // Time in milliseconds
 
 
@@ -88,12 +90,17 @@ ISR(INT4_vect) {
   // Ignore new events if another event (on any channel) is currently being processed
   
 }
-// Interrupt Service Routine for GPS_PPS
+// Interrupt Service Routines for GPS_PPS
 ISR(INT3_vect) {
-  usec_offset = micros(); 
+  uCountOffset = uCount; 
   ticCount++;  
   }
-
+ISR(TIMER1_COMPA_vect){
+  uCount++;
+}
+ISR(TIMER5_COMPA_vect){
+  uCount++;
+}
 
 void setup() {  
   // Initialize and configure SPI bus for A/D communications
@@ -135,9 +142,15 @@ void setup() {
   EICRA = B11000000;               // Set INT3 to be rising edge
   EIMSK = EIMSK | B00001000;       // Enables INT[3]
 
-  // TIMER Setup
-  // TCCR5 = 
-  
+  // TIMER Setup  
+  TCNT1 = 0;
+  TCCR1A = B00000000;
+  TCCR1B = B00000000;
+  OCR1A = 16;
+  TCCR1B |= (1 << WGM12);   // CTC mode
+  TCCR1B |= (1 << CS11);    // 8 prescaler 
+  TIMSK1 |= (1 << OCIE1A);  // enable timer compare interrupt
+   
   sei(); /* Enables global interrupts ( cli(); is used to disable interrupts ). */
    
   // Reset the FIFO.
@@ -168,16 +181,29 @@ void setup() {
   data_ch3.reset = PK_RST3;
   data_ch4.reset = PK_RST4;
 
-  delay(60000); // Allows 32U4 to set up before sending data.
+  delay(60); // Allows 32U4 to set up before sending data.
 
   // Start RTC and send System Start Time to FIFO
   Wire.begin(DS3231);   // Initializes RTC
-  //RTC_INIT_SQW();       // Initializes RTC "1Hz" Square Wave
   //send_data(0,RTC_GET_USEC(),0,0); DEVELOP SPECIAL PACKET TO SEND THAT TELLS TOMCAT WHEN SYSTEM STARTED TICs
   ticCount = 0;
 }
 
 void loop() {
+
+
+////////////////////////////////////
+  
+  uint32_t tempTime = uCount;
+  RTC_PRINT_TIME();
+  Serial.print(".");
+  Serial.print(tempTime);
+  Serial.print("\t");
+  Serial.print(ticCount);
+  Serial.print(".");
+  Serial.println(uCount);
+  delay(100);
+////////////////////////////////////
   
   if (FIFO_full_flag) {
      FIFO_full_flag = false;
@@ -278,7 +304,7 @@ ADC_data get_data(ADC_data data) {
     // Reset the peak detector. PH3 (the 4th bit of Port H) is the CH3 reset signal.
     PORTH = PORTH | data.reset; // Toggle PK_RST3 HIGH
     PORTH = PORTH & ~data.reset; // Toggle PK_RST3 LOW
-    return data;    
+    return data;       
 }
 
 
@@ -329,7 +355,7 @@ void print_debug(ADC_data data, char* channel_char, uint32_t timeMs){
     Serial.print(channel_char); Serial.print(", ");
     Serial.print(timeMs); Serial.print(", ");
     Serial.print(peak_val); Serial.print(", ");
-    Serial.print(tempRaw); Serial.print(", ");
+    Serial.print(tempRaw); Serial.println(", ");
 
 
 //    Serial.println((channel & 0xFF),            BIN); // [1st byte]

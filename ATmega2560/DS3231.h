@@ -1,12 +1,12 @@
 #define DS3231 0x68       // RTC defined address    1101000    
 
 volatile uint32_t rtcTime = 0;
-volatile uint32_t usec = 0;
-volatile uint32_t usec_offset = 0;
+volatile uint32_t uCount = 0;
+volatile uint32_t uCountOffset = 0;
 
-uint16_t RTC_GET_USEC(){
-  usec = micros() - usec_offset;
-  return round(usec/10);
+uint32_t RTC_GET_UCOUNT(){
+  uint32_t  usec = uCount - uCountOffset;
+  return usec;
 }
 
 // USE THIS TO GET TIME
@@ -35,7 +35,7 @@ void RTC_PRINT_TIME(){
   Serial.print(":");
   Serial.print(Minutes,HEX);
   Serial.print(":");
-  Serial.println(Seconds,HEX);
+  Serial.print(Seconds,HEX);
   }
 
 /* NOT IN USE / NO SQW HOOKED UP TO 2560
@@ -56,6 +56,7 @@ void RTC_INIT_SQW(){
 }
 */
 
+/* NOT IN USE / Passing BCD
 // Conversion Functions
 byte decToBcd(byte val){
   // Convert normal decimal numbers to binary coded decimal
@@ -63,3 +64,4 @@ byte decToBcd(byte val){
 byte bcdToDec(byte val){
   // Convert binary coded decimal to normal decimal numbers
   return ( (val/16*10) + (val%16) );}
+  */
