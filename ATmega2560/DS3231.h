@@ -1,6 +1,5 @@
 #define DS3231 0x68       // RTC defined address    1101000    
 
-volatile unsigned long rtcTime = 0;
 volatile unsigned long uSec = 0;
 volatile unsigned long uSecOffset = 0;
 
@@ -18,7 +17,7 @@ unsigned long RTC_GET_TIME(){
   unsigned long Seconds = Wire.read();
   unsigned long Minutes = Wire.read();
   unsigned long Hours   = Wire.read();
-  rtcTime =  Hours<<16 | Minutes<<8 | Seconds;
+  unsigned long rtcTime =  Hours<<16 | Minutes<<8 | Seconds;
   return rtcTime;
 }
 
