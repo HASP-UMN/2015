@@ -37,8 +37,8 @@ volatile bool FIFO_full_flag = false;
 // Timing Definitions and Declarations
 #define GPS_PV 47              // GPS Position Valid     Port D Pin 4
 #define clk_sel 41             // Clock Select           Port L Pin 6
-volatile uint32_t ticCount = 0;
-uint32_t timeMs = 0; // Time in milliseconds
+volatile unsigned long ticCount = 0;
+unsigned long timeMs = 0; // Time in milliseconds
 
 
 //uint16_t tempRaw = 0; // A/D converter's internal temp sensor
@@ -92,15 +92,15 @@ ISR(INT4_vect) {
 }
 // Interrupt Service Routines for GPS_PPS
 ISR(INT3_vect) {
-  uCountOffset = uCount; 
+  uSecOffset = micros(); 
   ticCount++;  
   }
-ISR(TIMER1_COMPA_vect){
-  uCount++;
-}
-ISR(TIMER5_COMPA_vect){
-  uCount++;
-}
+
+  // FOR TESTING
+ISR(INT1_vect) {
+  uSecOffset = micros(); 
+  ticCount++;  
+  }
 
 void setup() {  
   // Initialize and configure SPI bus for A/D communications
@@ -114,6 +114,8 @@ void setup() {
   Serial.println("Channel, TimeMs, Peak, ADC Temp, Seconds");
   Serial.println("=========================================");
 
+  cli(); // used to disable interrupts
+  
   // Set up Port H on the ATmega2560 as an output port. DDRH is the direction register for Port H.
   DDRH = DDRH | B01111111;
   // Initialize the digital outputs. PORTH is the register for the state of the outputs.
@@ -137,21 +139,12 @@ void setup() {
   EICRB = B11111111; // Set INT[4-7] to be on their rising edges
   EIMSK = B11110000; // Enable INT[4-7] 
   
-  // PORT D (GPS_PPS and GPS_PV Input Pins)
-  DDRD = DDRD | B00011000;         // Sets PE3 & PE4 as inputs
+  // PORT D (GPS_PPS as Input)
+  DDRD = DDRD | B00001000;         // Sets PE3 as input
   EICRA = B11000000;               // Set INT3 to be rising edge
   EIMSK = EIMSK | B00001000;       // Enables INT[3]
-
-  // TIMER Setup  
-  TCNT1 = 0;
-  TCCR1A = B00000000;
-  TCCR1B = B00000000;
-  OCR1A = 16;
-  TCCR1B |= (1 << WGM12);   // CTC mode
-  TCCR1B |= (1 << CS11);    // 8 prescaler 
-  TIMSK1 |= (1 << OCIE1A);  // enable timer compare interrupt
    
-  sei(); /* Enables global interrupts ( cli(); is used to disable interrupts ). */
+  sei(); // Enables global interrupts
    
   // Reset the FIFO.
   PORTH |= FIFO_WR; // set FIFO_WR high before resetting
@@ -193,15 +186,12 @@ void loop() {
 
 
 ////////////////////////////////////
-  
-  uint32_t tempTime = uCount;
   RTC_PRINT_TIME();
-  Serial.print(".");
-  Serial.print(tempTime);
-  Serial.print("\t");
+  unsigned long utemp = RTC_GET_USEC();
+  Serial.print("   ");
   Serial.print(ticCount);
   Serial.print(".");
-  Serial.println(uCount);
+  Serial.println(utemp);
   delay(100);
 ////////////////////////////////////
   

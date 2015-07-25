@@ -1,23 +1,23 @@
 #define DS3231 0x68       // RTC defined address    1101000    
 
-volatile uint32_t rtcTime = 0;
-volatile uint32_t uCount = 0;
-volatile uint32_t uCountOffset = 0;
+volatile unsigned long rtcTime = 0;
+volatile unsigned long uSec = 0;
+volatile unsigned long uSecOffset = 0;
 
-uint32_t RTC_GET_UCOUNT(){
-  uint32_t  usec = uCount - uCountOffset;
-  return usec;
+unsigned long RTC_GET_USEC(){
+  uSec = micros() - uSecOffset;
+  return uSec;
 }
 
 // USE THIS TO GET TIME
-uint32_t RTC_GET_TIME(){
+unsigned long RTC_GET_TIME(){
   Wire.beginTransmission(DS3231);
   Wire.write(0);
   Wire.endTransmission();
   Wire.requestFrom(DS3231, 3);
-  uint32_t Seconds = Wire.read();
-  uint32_t Minutes = Wire.read();
-  uint32_t Hours   = Wire.read();
+  unsigned long Seconds = Wire.read();
+  unsigned long Minutes = Wire.read();
+  unsigned long Hours   = Wire.read();
   rtcTime =  Hours<<16 | Minutes<<8 | Seconds;
   return rtcTime;
 }
@@ -38,7 +38,8 @@ void RTC_PRINT_TIME(){
   Serial.print(Seconds,HEX);
   }
 
-/* NOT IN USE / NO SQW HOOKED UP TO 2560
+/*
+// NOT IN USE / NO SQW HOOKED UP TO 2560
 void RTC_INIT_SQW(){
   // Start 1Hz square wave
   Wire.write(0);
@@ -56,12 +57,3 @@ void RTC_INIT_SQW(){
 }
 */
 
-/* NOT IN USE / Passing BCD
-// Conversion Functions
-byte decToBcd(byte val){
-  // Convert normal decimal numbers to binary coded decimal
-  return ( (val/10*16) + (val%10) );}
-byte bcdToDec(byte val){
-  // Convert binary coded decimal to normal decimal numbers
-  return ( (val/16*10) + (val%16) );}
-  */
