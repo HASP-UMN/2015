@@ -356,7 +356,6 @@ unsigned int getChecksum(unsigned int value) {
     h1 = h2 & 0xF;
     h2 = h1 << 2;
     h1 = HAMMING3 >> h2;
-
     h3 = 0; chksum = 0;
     h3 = (value & 0xF0) >> 2;
     h2 = HAMMING4 >> h3 & 0xF;
