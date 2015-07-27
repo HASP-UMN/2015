@@ -87,7 +87,7 @@ void init_vn100(struct imu* imuData_ptr){
 
 	// Set up file to write to.
 	imuData_ptr->VN100File = fopen(IMU_DATAFILE,"a");
-	if(GPSDataFile==NULL){
+	if(imuData_ptr->VN100File==NULL){
         reportError(ERR_IMU_WRITEFO);
         return;
     }
