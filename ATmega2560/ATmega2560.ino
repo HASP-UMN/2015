@@ -200,7 +200,13 @@ void loop() {
     
     timeMs = millis();  // Get timestamp in milliseconds
     data_ch1 = get_data(data_ch1);
-    send_data(data_ch1.send_channel, timeMs, data_ch1.peak_val, data_ch1.tempRaw, &checksum);
+    
+    checksum = getChecksum(data_ch1.send_channel);
+    checksum += getChecksum(timeMs);
+    checksum += getChecksum(data_ch1.peak_val);
+    checksum += getChecksum(data_ch1.tempRaw);
+    
+    send_data(data_ch1.send_channel, timeMs, data_ch1.peak_val, data_ch1.tempRaw, checksum);
     //debugging print statements in function below
 //    print_debug(data_ch1, "1", timeMs);
     
@@ -214,7 +220,13 @@ void loop() {
     
     timeMs = millis();  // Get timestamp in milliseconds
     data_ch2 = get_data(data_ch2);
-    send_data(data_ch2.send_channel, timeMs, data_ch2.peak_val, data_ch2.tempRaw, &checksum);
+
+    checksum = getChecksum(data_ch2.send_channel);
+    checksum += getChecksum(timeMs);
+    checksum += getChecksum(data_ch2.peak_val);
+    checksum += getChecksum(data_ch2.tempRaw);    
+    
+    send_data(data_ch2.send_channel, timeMs, data_ch2.peak_val, data_ch2.tempRaw, checksum);
     
     //debugging print statements in function below
 //    print_debug(data_ch2, "2", timeMs); 
@@ -229,7 +241,13 @@ void loop() {
     
     timeMs = millis();  // Get timestamp in milliseconds
     data_ch3 = get_data(data_ch3);
-    send_data(data_ch3.send_channel, timeMs, data_ch3.peak_val, data_ch3.tempRaw, &checksum);    
+    
+    checksum = getChecksum(data_ch3.send_channel);
+    checksum += getChecksum(timeMs);
+    checksum += getChecksum(data_ch3.peak_val);
+    checksum += getChecksum(data_ch3.tempRaw);    
+    
+    send_data(data_ch3.send_channel, timeMs, data_ch3.peak_val, data_ch3.tempRaw, checksum);    
 
 //    print_debug(data_ch3, "3", timeMs);   
     
@@ -242,8 +260,15 @@ void loop() {
   if (newEventCH4) {
     
     timeMs = millis();  // Get timestamp in milliseconds
-    data_ch4 = get_data(data_ch4);  
-    send_data(data_ch4.send_channel, timeMs, data_ch4.peak_val, data_ch4.tempRaw, &checksum);    
+    data_ch4 = get_data(data_ch4);
+
+    checksum = getChecksum(data_ch4.send_channel);
+    checksum += getChecksum(timeMs);
+    checksum += getChecksum(data_ch4.peak_val);
+    checksum += getChecksum(data_ch4.tempRaw);
+
+    send_data(data_ch4.send_channel, timeMs, data_ch4.peak_val, data_ch4.tempRaw, checksum);
+
 
 //    print_debug(data_ch4, "4", timeMs);
 
@@ -263,7 +288,6 @@ ADC_data get_data(ADC_data data) {
     PORTH = PORTH | ADC_CS; // Toggle ADC_CS HIGH
       
     // Read temp sensor
-
     PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
     SPI.transfer(MANUAL_READ_ADDR << 1);
     SPI.transfer(READ_TEMP);
@@ -291,7 +315,7 @@ ADC_data get_data(ADC_data data) {
 
 
 
-void send_data(uint8_t channel, uint32_t timeMs, uint16_t peak, uint16_t tempRaw, uint16_t *checksum) {
+void send_data(uint8_t channel, uint32_t timeMs, uint16_t peak, uint16_t tempRaw, uint16_t checksum) {
   
     PORTF = (channel & 0xFF);              //1st byte
     PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
@@ -325,15 +349,11 @@ void send_data(uint8_t channel, uint32_t timeMs, uint16_t peak, uint16_t tempRaw
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
     
-    PORTF = (tempRaw & 0xFF00)>>8;         //9th byte    
+    PORTF = (checksum & 0xFF);             //9th byte    
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
     
-    PORTF = (tempRaw & 0xFF00)>>8;         //10th byte    
-    PORTH = PORTH & ~FIFO_WR;
-    PORTH = PORTH |  FIFO_WR;
-    
-    PORTF = (tempRaw & 0xFF00)>>8;         //11th byte    
+    PORTF = (checksum & 0xFF00)>>8;        //10th byte    
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
     
