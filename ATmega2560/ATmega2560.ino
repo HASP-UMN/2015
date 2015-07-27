@@ -19,9 +19,6 @@
 #define DISCRIMINATOR3 5 // INT5: Channel 3 discrimintor.
 #define DISCRIMINATOR4 4 // INT4: Channel 4 discrimintor.
 
-// GPS PPS Interrupt
-#define GPS_PPS 3        // INT3: GPS Pulse Per Second   Port D Pin 3
-
   // Port masks for Port H
 #define ADC_CS   0B01000000
 #define PK_RST1  0B00100000
@@ -31,22 +28,19 @@
 #define FIFO_RST 0B00000010
 #define FIFO_WR  0B00000001
 
-
 // Checksum definitions
 #define H3 36344967696
 #define H4 4841987667533046032
-
+unsigned int checksum = 0;
 
 // FIFO full flag. Pin 88 on the ATmega2560
 volatile bool FIFO_full_flag = false;
 
 // Timing Definitions and Declarations
-#define GPS_PV 47              // GPS Position Valid     Port D Pin 4
-#define clk_sel 41             // Clock Select           Port L Pin 6
+//#define GPS_PV 47              // GPS Position Valid     Port D Pin 4
+//#define clk_sel 41             // Clock Select           Port L Pin 6
 volatile unsigned long ticCount = 0;
 unsigned long timeMs = 0; // Time in milliseconds
-unsigned int checksum = 0;
-
 
 //uint16_t tempRaw = 0; // A/D converter's internal temp sensor
 //uint8_t  channel = 0; // Channel no. [1-4]
@@ -98,12 +92,6 @@ ISR(INT3_vect) {
   uSecOffset = micros(); 
   ticCount++;
   }  
-  // FOR TESTING
-ISR(INT1_vect) {
-  uSecOffset = micros(); 
-  ticCount++;  
-  }
-  
 
 void setup() {  
   // Initialize and configure SPI bus for A/D communications
@@ -115,7 +103,7 @@ void setup() {
   // Open serial port
   Serial.begin(115200); Serial.flush();
   Serial.println("Channel, TimeMs, Peak, ADC Temp, Seconds");
-  Serial.println("=========================================");
+  Serial.println("========================================");
 
   cli(); // used to disable interrupts
   
@@ -181,7 +169,7 @@ void setup() {
 
   // Start RTC and send System Start Time to FIFO
   Wire.begin(DS3231);   // Initializes RTC
-  //send_data(0,RTC_GET_USEC(),0,0); DEVELOP SPECIAL PACKET TO SEND THAT TELLS TOMCAT WHEN SYSTEM STARTED TICs
+  //send_data(0,RTC_GET_USEC(),0,0); 
   ticCount = 0;
 }
 
@@ -310,9 +298,7 @@ ADC_data get_data(ADC_data data) {
     return data;       
 }
 
-
-
-void send_data(uint8_t channel, uint32_t timeMs, uint16_t peak, uint16_t tempRaw, uint16_t checksum) {
+void send_data(uint8_t channel, unsigned long timeMs, uint16_t peak, uint16_t tempRaw, uint16_t checksum) {
   
     PORTF = (channel & 0xFF);              //1st byte
     PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
@@ -356,7 +342,7 @@ void send_data(uint8_t channel, uint32_t timeMs, uint16_t peak, uint16_t tempRaw
     
 }
 
-void print_debug(ADC_data data, char* channel_char, uint32_t timeMs) {
+void print_debug(ADC_data data, char* channel_char, unsigned long timeMs) {
   
     uint8_t  channel = data.read_channel;
     uint16_t peak_val = data.peak_val;
@@ -369,7 +355,6 @@ void print_debug(ADC_data data, char* channel_char, uint32_t timeMs) {
 }
 
 unsigned int getChecksum(unsigned int value) {
-
     unsigned int h1, h2, h3;
     unsigned int chksum;
     
@@ -386,5 +371,4 @@ unsigned int getChecksum(unsigned int value) {
 
     chksum = (h1 >> h3) & 0xF;
     return chksum;
-
 }
