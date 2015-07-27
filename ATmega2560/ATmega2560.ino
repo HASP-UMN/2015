@@ -105,9 +105,6 @@ ISR(INT1_vect) {
   }
   
 
-
-
-
 void setup() {  
   // Initialize and configure SPI bus for A/D communications
   SPI.begin();
