@@ -39,6 +39,7 @@ volatile bool FIFO_full_flag = false;
 #define clk_sel 41             // Clock Select           Port L Pin 6
 volatile unsigned long ticCount = 0;
 unsigned long timeMs = 0; // Time in milliseconds
+unsigned int checksum = 0;
 
 
 //uint16_t tempRaw = 0; // A/D converter's internal temp sensor
@@ -193,7 +194,7 @@ void loop() {
     
     timeMs = millis();  // Get timestamp in milliseconds
     data_ch1 = get_data(data_ch1);
-    send_data(data_ch1.send_channel, timeMs, data_ch1.peak_val, data_ch1.tempRaw);
+    send_data(data_ch1.send_channel, timeMs, data_ch1.peak_val, data_ch1.tempRaw, &checksum);
     //debugging print statements in function below
 //    print_debug(data_ch1, "1", timeMs);
     
@@ -207,7 +208,7 @@ void loop() {
     
     timeMs = millis();  // Get timestamp in milliseconds
     data_ch2 = get_data(data_ch2);
-    send_data(data_ch2.send_channel, timeMs, data_ch2.peak_val, data_ch2.tempRaw);
+    send_data(data_ch2.send_channel, timeMs, data_ch2.peak_val, data_ch2.tempRaw, &checksum);
     
     //debugging print statements in function below
 //    print_debug(data_ch2, "2", timeMs); 
@@ -222,7 +223,7 @@ void loop() {
     
     timeMs = millis();  // Get timestamp in milliseconds
     data_ch3 = get_data(data_ch3);
-    send_data(data_ch3.send_channel, timeMs, data_ch3.peak_val, data_ch3.tempRaw);    
+    send_data(data_ch3.send_channel, timeMs, data_ch3.peak_val, data_ch3.tempRaw, &checksum);    
 
 //    print_debug(data_ch3, "3", timeMs);   
     
@@ -236,7 +237,7 @@ void loop() {
     
     timeMs = millis();  // Get timestamp in milliseconds
     data_ch4 = get_data(data_ch4);  
-    send_data(data_ch4.send_channel, timeMs, data_ch4.peak_val, data_ch4.tempRaw);    
+    send_data(data_ch4.send_channel, timeMs, data_ch4.peak_val, data_ch4.tempRaw, &checksum);    
 
 //    print_debug(data_ch4, "4", timeMs);
 
@@ -284,8 +285,8 @@ ADC_data get_data(ADC_data data) {
 
 
 
-void send_data(uint8_t channel, uint32_t timeMs, uint16_t peak, uint16_t tempRaw) {
- 
+void send_data(uint8_t channel, uint32_t timeMs, uint16_t peak, uint16_t tempRaw, uint16_t *checksum) {
+  
     PORTF = (channel & 0xFF);              //1st byte
     PORTH = PORTH & ~FIFO_WR; // Assert FIFO_WR to LOW state
     PORTH = PORTH |  FIFO_WR; // Return FIFO_WR to HIGH state
@@ -321,15 +322,47 @@ void send_data(uint8_t channel, uint32_t timeMs, uint16_t peak, uint16_t tempRaw
     PORTF = (tempRaw & 0xFF00)>>8;         //9th byte    
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
+    
+    PORTF = (tempRaw & 0xFF00)>>8;         //10th byte    
+    PORTH = PORTH & ~FIFO_WR;
+    PORTH = PORTH |  FIFO_WR;
+    
+    PORTF = (tempRaw & 0xFF00)>>8;         //11th byte    
+    PORTH = PORTH & ~FIFO_WR;
+    PORTH = PORTH |  FIFO_WR;
+    
 }
 
-void print_debug(ADC_data data, char* channel_char, uint32_t timeMs){
-  uint8_t  channel = data.read_channel;
-  uint16_t peak_val = data.peak_val;
-  uint16_t tempRaw = data.tempRaw;
+void print_debug(ADC_data data, char* channel_char, uint32_t timeMs) {
+  
+    uint8_t  channel = data.read_channel;
+    uint16_t peak_val = data.peak_val;
+    uint16_t tempRaw = data.tempRaw;
   
     Serial.print(channel_char); Serial.print(", ");
     Serial.print(timeMs); Serial.print(", ");
     Serial.print(peak_val); Serial.print(", ");
     Serial.print(tempRaw); Serial.println(", ");
+}
+
+unsigned int getChecksum(unsigned int value) {
+
+    unsigned int x = value;
+    unsigned int h2, chksum, h1, h3;
+
+    h1 = 0; h2 = 0;
+    h1 = (value & 0xF) << 2;
+    h2 = HAMMING4 >> h1;
+    h1 = h2 & 0xF;
+    h2 = h1 << 2;
+    h1 = HAMMING3 >> h2;
+
+    h3 = 0; chksum = 0;
+    h3 = (value & 0xF0) >> 2;
+    h2 = HAMMING4 >> h3 & 0xF;
+    h3 = h2 << 2;
+
+    chksum = (h1 >> h3) & 0xF;
+    return chksum;
+
 }
