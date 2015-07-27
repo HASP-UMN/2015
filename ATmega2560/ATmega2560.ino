@@ -353,9 +353,9 @@ void print_debug(ADC_data data, char* channel_char, uint32_t timeMs) {
 
 unsigned int getChecksum(unsigned int value) {
 
-    unsigned int x = value;
-    unsigned int h2, chksum, h1, h3;
-
+    unsigned int h1, h2, h3;
+    unsigned int chksum;
+    
     h1 = 0; h2 = 0;
     h1 = (value & 0xF) << 2;
     h2 = H4 >> h1;
