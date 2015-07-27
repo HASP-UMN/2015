@@ -31,6 +31,12 @@
 #define FIFO_RST 0B00000010
 #define FIFO_WR  0B00000001
 
+
+// Checksum definitions
+#define H3 36344967696
+#define H4 4841987667533046032
+
+
 // FIFO full flag. Pin 88 on the ATmega2560
 volatile bool FIFO_full_flag = false;
 
@@ -352,13 +358,13 @@ unsigned int getChecksum(unsigned int value) {
 
     h1 = 0; h2 = 0;
     h1 = (value & 0xF) << 2;
-    h2 = HAMMING4 >> h1;
+    h2 = H4 >> h1;
     h1 = h2 & 0xF;
     h2 = h1 << 2;
-    h1 = HAMMING3 >> h2;
+    h1 = H3 >> h2;
     h3 = 0; chksum = 0;
     h3 = (value & 0xF0) >> 2;
-    h2 = HAMMING4 >> h3 & 0xF;
+    h2 = H4 >> h3 & 0xF;
     h3 = h2 << 2;
 
     chksum = (h1 >> h3) & 0xF;
