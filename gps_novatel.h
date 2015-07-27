@@ -11,9 +11,6 @@
 #include <stdbool.h>
 #include "globaldefs.h"
 
-//#define GPS_RST 61
-//#define GPS_POS_VAL 44
-
 void init_GPS(struct gps *gpsData_ptr);
 void read_GPS(struct gps *gpsData_ptr);
 bool GetBitMask(unsigned char *bits, int startingByte, uint8_t bitMask);
