@@ -2,7 +2,7 @@
 
 CC=gcc
 
-all: main
+all: read main
 
 main: main.o VN100.o gps_novatel.o serial.o timing.o errorword.o telemetry.o
 	$(CC) -o main main.o VN100.o gps_novatel.o serial.o timing.o errorword.o telemetry.o
