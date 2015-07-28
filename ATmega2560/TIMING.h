@@ -11,8 +11,6 @@
 
 // DEFINITIONS:
 #define DS3231 0x68       // RTC defined address    1101000    
-//#define GPS_PV 47              // GPS Position Valid     Port D Pin 4
-//#define clk_sel 41             // Clock Select           Port L Pin 6
 
 // VARIABLES:
 volatile unsigned long ticCount = 0;

@@ -129,7 +129,7 @@ void setup() {
   EIMSK = B11110000; // Enable INT[4-7] 
   
   // PORT D (GPS_PPS as Input)
-  DDRD = DDRD | B00001000;         // Sets PE3 as input
+  DDRD = DDRD | B00000000;         // Sets PD3 as input
   EICRA = B11000000;               // Set INT3 to be rising edge
   EIMSK = EIMSK | B00001000;       // Enables INT[3]
    
@@ -163,7 +163,7 @@ void setup() {
   data_ch3.reset = PK_RST3;
   data_ch4.reset = PK_RST4;
 
-  delay(120000); // Allows 32U4 to set up before sending data.
+  //delay(240000); // Allows 32U4 to set up before sending data.
 
   // Start RTC and send System Start Time to FIFO
   Wire.begin(DS3231);   // Initializes RTC 
@@ -196,15 +196,16 @@ void setup() {
      second/tic will be calculated.
      */
     }
-    start_usec_offset = start_usec_offset - micros();
+    start_usec_offset = micros() - start_usec_offset;
     start_time = RTC_GET_TIME();
-    //Startbyte, data_ch3.send_channel, ticStamp, uSecStamp, data_ch3.peak_val, data_ch3.tempRaw, checksum);    
-    send_data(0xFF,0xFF,start_time,start_usec_offset,0xFFFFFFFF,0xFFFF,0xFFFF);
 
-} // end SETUP()
+  //Startbyte, data_ch3.send_channel, ticStamp, uSecStamp, data_ch3.peak_val, data_ch3.tempRaw, checksum);    
+  send_data(0xFF,0xFF,start_time,start_usec_offset,0xFFFFFFFF,0xFFFF,0xFFFF);
+
+} // end SETUP
 
 void loop() {
-
+  
   if (FIFO_full_flag) {
      FIFO_full_flag = false;
      // if the FF flag is set in the beginning of the loop (i.e. at boot or after a reset), unset it
