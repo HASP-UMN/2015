@@ -5,7 +5,7 @@ CC=gcc
 all: main
 
 main: main.o VN100.o gps_novatel.o serial.o timing.o errorword.o telemetry.o
-	$(CC) -o MAIN main.o VN100.o gps_novatel.o serial.o timing.o errorword.o telemetry.o
+	$(CC) -o main main.o VN100.o gps_novatel.o serial.o timing.o errorword.o telemetry.o
 	rm -rf *.o
 
 main.o: main.c globaldefs.h errorword.h
@@ -33,7 +33,7 @@ read: read_fifo_store_data.c
 	$(CC) -o read_fifo_store_data read_fifo_store_data.c
 
 clean:
-	$(RM) MAIN
+	$(RM) main
 	rm -rf *.o
 
 cleardata:
