@@ -1,14 +1,29 @@
-#define DS3231 0x68       // RTC defined address    1101000    
+/*//////////////////////////////////////////////////////////////////////
 
+                        UNIVERSITY OF MINNESOTA
+  * 2015 HASP TIMING
+  * Authored - Charles Denis 7/15/2015
+    * UPDATES:
+      * Updated to contain all timing declarations and functions- CD 7/28/2015 
+      * 
+
+*///////////////////////////////////////////////////////////////////////
+
+// DEFINITIONS:
+#define DS3231 0x68       // RTC defined address    1101000    
+//#define GPS_PV 47              // GPS Position Valid     Port D Pin 4
+//#define clk_sel 41             // Clock Select           Port L Pin 6
+
+// VARIABLES:
+volatile unsigned long ticCount = 0;
 volatile unsigned long uSec = 0;
 volatile unsigned long uSecOffset = 0;
 
+// FUNCTIONS:
 unsigned long RTC_GET_USEC(){
   uSec = micros() - uSecOffset;
   return uSec;
 }
-
-// USE THIS TO GET TIME
 unsigned long RTC_GET_TIME(){
   Wire.beginTransmission(DS3231);
   Wire.write(0);
@@ -17,12 +32,10 @@ unsigned long RTC_GET_TIME(){
   unsigned long Seconds = Wire.read();
   unsigned long Minutes = Wire.read();
   unsigned long Hours   = Wire.read();
-  unsigned long rtcTime =  Hours<<16 | Minutes<<8 | Seconds;
+  unsigned long rtcTime =  0x0000FF<<24 | Hours<<16 | Minutes<<8 | Seconds;
   return rtcTime;
 }
-
-// PRINT_TIME SHOULD ONLY BE USED FOR DEBUGGING
-void RTC_PRINT_TIME(){
+void RTC_PRINT_TIME(){// !!! PRINT_TIME SHOULD ONLY BE USED FOR DEBUGGING !!!
   Wire.beginTransmission(DS3231);
   Wire.write(0);
   Wire.endTransmission();
@@ -35,5 +48,5 @@ void RTC_PRINT_TIME(){
   Serial.print(Minutes,HEX);
   Serial.print(":");
   Serial.print(Seconds,HEX);
-  }
+}
 
