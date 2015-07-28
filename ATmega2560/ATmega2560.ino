@@ -39,7 +39,7 @@ volatile bool FIFO_full_flag = false;
 // Timing Definitions and Declarations
 //#define GPS_PV 47              // GPS Position Valid     Port D Pin 4
 //#define clk_sel 41             // Clock Select           Port L Pin 6
-volatile unsigned long ticCount = 0;
+volatile unsigned int ticCount = 0;
 unsigned long timeMs = 0; // Time in milliseconds
 
 //uint16_t tempRaw = 0; // A/D converter's internal temp sensor
@@ -168,10 +168,41 @@ void setup() {
   //delay(60); // Allows 32U4 to set up before sending data.
 
   // Start RTC and send System Start Time to FIFO
-  Wire.begin(DS3231);   // Initializes RTC
-  //send_data(0,RTC_GET_USEC(),0,0); 
-  ticCount = 0;
-}
+  Wire.begin(DS3231);   // Initializes RTC 
+  byte init_time1 = 0;
+  byte init_time2 = 0;
+  unsigned long start_time = 0;
+  unsigned long start_usec_offset = 0;
+  bool sec_change = false;
+    Wire.beginTransmission(DS3231);
+    Wire.write(0);
+    Wire.endTransmission();
+    Wire.requestFrom(DS3231, 1);
+    init_time1 = Wire.read();
+  // while loop must poll RTC to get most accurate second change nearest to first gpsPPS tic
+  while(sec_change == false){
+    init_time1 = init_time2;
+    start_usec_offset = micros();
+    Wire.beginTransmission(DS3231);
+    Wire.write(0);
+    Wire.endTransmission();
+    Wire.requestFrom(DS3231, 1);
+    init_time2 = Wire.read();
+    sec_change = (init_time1 == init_time2);
+    ticCount = 0;
+    }
+  while(ticCount == 0){
+    /*
+     This while holds the program until the gpsPPS starts a tic count.
+     After the first incrementation of ticCount, the offset from RTC
+     second/tic will be calculated.
+     */
+    }
+    start_usec_offset = start_usec_offset - micros();
+    start_time = RTC_GET_TIME();
+    send_data(0,start_usec_offset,0,0,0);
+
+} // end SETUP()
 
 void loop() {
 

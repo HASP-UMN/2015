@@ -37,22 +37,3 @@ void RTC_PRINT_TIME(){
   Serial.print(Seconds,HEX);
   }
 
-/*
-// NOT IN USE / NO SQW HOOKED UP TO 2560
-void RTC_INIT_SQW(){
-  // Start 1Hz square wave
-  Wire.write(0);
-  Wire.write(0x0E); // move pointer to SQW address 
-  Wire.endTransmission();  
-  Wire.requestFrom(DS3231,1);
-  uint8_t REG_0E = Wire.read();
-   // Set bits 4 and 3 for 1Hz
-   REG_0E &= ~(1 << 4);
-   REG_0E &= ~(1 << 3);
-  Wire.beginTransmission(DS3231);
-  Wire.write(0x0E);
-  Wire.write(0x10);
-  Wire.endTransmission();
-}
-*/
-
