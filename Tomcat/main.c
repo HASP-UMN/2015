@@ -53,7 +53,7 @@ int                  PHOTONS_AQUIRED = 0;
 // ISA BUS INPUT PORT
 const unsigned short INPUT_PORT = 0x800; // base address
 #define SYNC_BYTE 77 //arbitrarily chosen for now
-#define IRQ_NUM 6
+#define IRQ_NUM 5
 
 //state machine state
 typedef enum state{

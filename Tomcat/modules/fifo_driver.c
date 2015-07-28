@@ -21,7 +21,7 @@ MODULE_AUTHOR("Aron Lindell");
 MODULE_DESCRIPTION("HASP FIFO Driver");
 MODULE_LICENSE("GPL");
 
-#define IRQ_NUM 6
+#define IRQ_NUM 5
 #define CLASS_NAME "Photon_Fifo"
 #define DEVICE_NAME "FIFO_DEV"
 #define BUFMAX 500
