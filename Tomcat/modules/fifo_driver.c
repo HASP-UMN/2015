@@ -15,12 +15,13 @@
 #include <linux/interrupt.h>
 #include <asm/signal.h>
 #include <asm/io.h>
+#include <linux/time.h>
 
 MODULE_AUTHOR("Aron Lindell");
-MODULE_DESCRIPTION("HASP_FIFO Driver");
+MODULE_DESCRIPTION("HASP FIFO Driver");
 MODULE_LICENSE("GPL");
 
-#define IRQ_NUM 6
+#define IRQ_NUM 5
 #define CLASS_NAME "Photon_Fifo"
 #define DEVICE_NAME "FIFO_DEV"
 #define BUFMAX 500
@@ -36,6 +37,7 @@ static int interrupt_flag;
 static int int_pending_count;
 
 //function declarations
+
 static int fifo_open(struct inode* inode, struct file* filp);
 static ssize_t fifo_read(struct file*, char*, size_t, loff_t *);
 irq_handler_t handler(int irq, void* dev_id, struct pt_regs *regs);
@@ -145,19 +147,22 @@ static int fifo_open(struct inode* inode, struct file* filp)
 irq_handler_t handler(int irq, void* dev_id, struct pt_regs *regs)
 {
     int i;
+	struct timeval start, end;
+	do_gettimeofday(&start);
+
 	int_pending_count++;
 
 	if (int_pending_count > 4)//fifo_buffer is already full
 	{
 		printk("<1> int_pending_count = %d, not reading port\n", int_pending_count);
-		return (irq_handler_t) -1;
+		return (irq_handler_t) - 1;
 	}
-
+/*
     for (i = (int_pending_count - 1)*BUFMAX; i < int_pending_count*BUFMAX; i++)
 	{
         fifo_buffer[i] = inb(port_start + (i % BUFMAX) );
     }
-
+*/
 /*
 	for(i = 0; i < BUFMAX; i++)
 	{
@@ -165,9 +170,13 @@ irq_handler_t handler(int irq, void* dev_id, struct pt_regs *regs)
 	}
 */
     // or can you insb as below
-    //insb(port_start, fifo_buffer, BUFMAX);
+    insb(port_start, fifo_buffer, BUFMAX);
 	interrupt_flag = 1;
     wake_up_interruptible(&wq);
+	do_gettimeofday(&end);
+	printk("<1> Time elapsed during interrupt handler = %lu\n", (end.tv_usec - start.tv_usec) );
+//	printk("<1> handler start = %lu \n ", start.tv_usec);
+//	printk("<1> handler end = %lu \n", end.tv_usec);
 	return 0;
 }
 
@@ -225,7 +234,7 @@ static void __exit fifo_exit(void)
 	unregister_chrdev(major, DEVICE_NAME);
 	disable_irq(IRQ_NUM);
 	release_region(port_start, BUFMAX);
-} 
+}
 
 
 

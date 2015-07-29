@@ -32,7 +32,7 @@ void setup() {
   printTime();
   Serial.println("Please change to newline ending the settings on the lower right of the Serial Monitor");
   Serial.println("Would you like to set the date and time now? Y/N");
-  Serial.println("Set Serial Monitor to Carriage Return");
+  Serial.println("\t *Please Set Serial Monitor to Carriage Return");
  
   while (!Serial.available()) delay(10);
   if (Serial.read() == 'y' || Serial.read() == 'Y')
@@ -50,7 +50,7 @@ void setup() {
 // This set of codes is allows input of data
 void setTime() {
   Serial.println("Setting Time...");
-  Serial.println("Set Serial Monitor to New Line and Carriage Return");
+  Serial.println("\t *Please Set Serial Monitor to New Line and Carriage Return");
   Serial.print("Please enter the current year, 00-99. - ");
   year = readByte();
   Serial.println(year);
