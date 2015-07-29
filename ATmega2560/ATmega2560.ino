@@ -100,7 +100,7 @@ void setup() {
   
   // Open serial port
   Serial.begin(115200); Serial.flush();
-  Serial.println("Startbyte, Channel, Seconds, uSeconds, Peak, ADC Temp, Checksum");
+  Serial.println("Channel, PeakVal, TempRaw, Seconds, uSeconds, rtcTime");
   Serial.println("===============================================================");
 
   cli(); // used to disable interrupts
@@ -198,9 +198,11 @@ void setup() {
     }
     start_usec_offset = micros() - start_usec_offset;
     start_time = RTC_GET_TIME();
+    send_data(0xFF,0xFF,start_time,start_usec_offset,0xFFFFFFFF,0xFFFF,0xFFFF);
 
-  //Startbyte, data_ch3.send_channel, ticStamp, uSecStamp, data_ch3.peak_val, data_ch3.tempRaw, checksum);    
-  send_data(0xFF,0xFF,start_time,start_usec_offset,0xFFFFFFFF,0xFFFF,0xFFFF);
+    // Debugging print statements below.
+    Serial.print("TIMEPACKET,         "); Serial.print(start_time,BIN); Serial.print(", "); Serial.println(start_usec_offset,BIN);
+    Serial.print("TIMEPACKET DECODED, "); Serial.print(start_time,HEX); Serial.print(", "); Serial.println(start_usec_offset);
 
 } // end SETUP
 
@@ -226,9 +228,10 @@ void loop() {
     checksum += getChecksum(data_ch1.tempRaw);
     
     send_data(Startbyte, data_ch1.send_channel, ticStamp, uSecStamp, data_ch1.peak_val, data_ch1.tempRaw, checksum);
+
     //debugging print statements in function below
-//    print_debug(data_ch1, "1", timeMs);
-    
+    print_debug(data_ch1, "1", ticStamp, uSecStamp);
+
     // Reset peak value and interrupt flag for CH1
     newEventCH1 = false;
     data_ch1.peak_val = 0;
@@ -251,8 +254,8 @@ void loop() {
     send_data(Startbyte, data_ch2.send_channel, ticStamp, uSecStamp, data_ch2.peak_val, data_ch2.tempRaw, checksum);
     
     //debugging print statements in function below
-//    print_debug(data_ch2, "2", timeMs); 
-
+    print_debug(data_ch2, "2", ticStamp, uSecStamp);
+    
     // Reset peak value and interrupt flag for CH2
     newEventCH2 = false;
     data_ch2.peak_val = 0;
@@ -274,7 +277,8 @@ void loop() {
     
     send_data(Startbyte, data_ch3.send_channel, ticStamp, uSecStamp, data_ch3.peak_val, data_ch3.tempRaw, checksum);    
 
-//    print_debug(data_ch3, "3", timeMs);   
+    //debugging print statements in function below
+    print_debug(data_ch3, "3", ticStamp, uSecStamp);
     
     // Reset peak value and interrupt flag for CH3
     newEventCH3 = false;
@@ -297,8 +301,9 @@ void loop() {
 
     send_data(Startbyte, data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw, checksum);
 
+    //debugging print statements in function below
+    print_debug(data_ch4, "4", ticStamp, uSecStamp);
 
-//    print_debug(data_ch4, "4", timeMs);
     // Reset peak value and interrupt flag for CH4
     newEventCH4 = false;
     data_ch4.peak_val = 0;
@@ -357,52 +362,40 @@ void send_data(uint8_t Startbyte, uint8_t channel, unsigned long ticStamp,
     PORTF = (ticStamp  & 0xFF00)>>8;         //4th byte        
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
-
-    PORTF = (ticStamp  & 0xFF0000)>>16;      //5th byte    
-    PORTH = PORTH & ~FIFO_WR;
-    PORTH = PORTH |  FIFO_WR;
-    
-    PORTF = (ticStamp  & 0xFF000000)>>24;    //6th byte       
-    PORTH = PORTH & ~FIFO_WR;
-    PORTH = PORTH |  FIFO_WR;
         
-    PORTF = (uSecStamp  & 0xFF);              //7th byte        
+    PORTF = (uSecStamp  & 0xFF);              //5th byte        
     PORTH = PORTH & ~FIFO_WR; 
     PORTH = PORTH |  FIFO_WR; 
   
-    PORTF = (uSecStamp  & 0xFF00)>>8;         //8th byte        
+    PORTF = (uSecStamp  & 0xFF00)>>8;         //6th byte        
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
 
-    PORTF = (uSecStamp  & 0xFF0000)>>16;      //9th byte    
+    PORTF = (uSecStamp  & 0xFF0000)>>16;      //7th byte    
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
     
-    PORTF = (uSecStamp  & 0xFF000000)>>24;    //10th byte       
+    PORTF = (peak & 0xFF);                 //8th byte    
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
     
-    PORTF = (peak & 0xFF);                 //11th byte    
+    PORTF = (peak & 0xFF00)>>8;            //9th byte        
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
     
-    PORTF = (peak & 0xFF00)>>8;            //12th byte        
-    PORTH = PORTH & ~FIFO_WR;
-    PORTH = PORTH |  FIFO_WR;
-    
-    PORTF = (tempRaw & 0xFF);              //13th byte    
+    PORTF = (tempRaw & 0xFF);              //10th byte    
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
 
-    PORTF = (tempRaw & 0xFF00)>>8;         //14th byte    
+    PORTF = (tempRaw & 0xFF00)>>8;         //11th byte    
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
     
-    PORTF = (checksum & 0xFF);             //15th byte    
+    PORTF = (checksum & 0xFF);             //12th byte    
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
     
-    PORTF = (checksum & 0xFF00)>>8;        //16th byte    
+    PORTF = (checksum & 0xFF00)>>8;        //13th byte    
     PORTH = PORTH & ~FIFO_WR;
     PORTH = PORTH |  FIFO_WR;
     
@@ -413,12 +406,15 @@ void print_debug(ADC_data data, char* channel_char, unsigned long ticStamp, unsi
     uint8_t  channel = data.read_channel;
     uint16_t peak_val = data.peak_val;
     uint16_t tempRaw = data.tempRaw;
-  
+
     Serial.print(channel_char); Serial.print(", ");
     Serial.print(peak_val); Serial.print(", ");
     Serial.print(tempRaw); Serial.print(", ");
-    Serial.print(ticStamp); Serial.print("sec ");
-    Serial.print(uSecStamp); Serial.println("usec ");
+    Serial.print(ticStamp); Serial.print(", ");
+    Serial.print(uSecStamp); Serial.print(", ");
+    RTC_PRINT_TIME();
+    Serial.print("\t\t"); Serial.print(RTC_GET_TEMP());
+    Serial.println();
 }
 
 unsigned int getChecksum(unsigned int value) {
