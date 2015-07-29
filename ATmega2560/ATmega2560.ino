@@ -163,7 +163,7 @@ void setup() {
   data_ch3.reset = PK_RST3;
   data_ch4.reset = PK_RST4;
 
-  //delay(240000); // Allows 32U4 to set up before sending data.
+  delay(240000); // Allows 32U4 to set up before sending data.
 
   // Start RTC and send System Start Time to FIFO
   Wire.begin(DS3231);   // Initializes RTC 
@@ -205,7 +205,7 @@ void setup() {
 } // end SETUP
 
 void loop() {
-  
+
   if (FIFO_full_flag) {
      FIFO_full_flag = false;
      // if the FF flag is set in the beginning of the loop (i.e. at boot or after a reset), unset it

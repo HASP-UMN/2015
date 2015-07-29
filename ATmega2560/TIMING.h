@@ -33,6 +33,16 @@ unsigned long RTC_GET_TIME(){
   unsigned long rtcTime =  0x0000FF<<24 | Hours<<16 | Minutes<<8 | Seconds;
   return rtcTime;
 }
+unsigned int RTC_GET_TEMP(){
+  Wire.beginTransmission(DS3231);
+  Wire.write(0x11);
+  Wire.endTransmission();
+  Wire.requestFrom(DS3231, 2);
+  unsigned int MSB = Wire.read();
+  unsigned int LSB = Wire.read();
+  unsigned int rtcTemp =  MSB<<8 | LSB;
+  return rtcTemp;
+}
 void RTC_PRINT_TIME(){// !!! PRINT_TIME SHOULD ONLY BE USED FOR DEBUGGING !!!
   Wire.beginTransmission(DS3231);
   Wire.write(0);
