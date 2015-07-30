@@ -178,7 +178,7 @@ void setup() {
     Wire.requestFrom(DS3231, 1);
     init_time2 = Wire.read();
   // while loop must poll RTC to get most accurate second change nearest to first gpsPPS tic
-  while(sec_change == false){
+  while(sec_change == false){ 
     init_time1 = init_time2;
     start_usec_offset = micros();
     Wire.beginTransmission(DS3231);
@@ -197,12 +197,18 @@ void setup() {
      */
     }
     start_usec_offset = micros() - start_usec_offset;
-    start_time = RTC_GET_TIME();
-    send_data(0xFF,start_time,start_usec_offset,0xFFFFFFFF,0xFFFF,0xFFFF);
+    Wire.beginTransmission(DS3231);
+    Wire.write(0x01);
+    Wire.endTransmission();
+    Wire.requestFrom(DS3231, 2);
+    unsigned int Minutes = Wire.read();
+    byte Hours           = Wire.read();
+    start_time =  Minutes<<8 | init_time2;
+    send_data(0xFF, Hours, start_time, start_usec_offset, 0xFFFFFFFF, 0xFFFF, 0xFFFF);
 
     // Debugging print statements below.
-    Serial.print("TIMEPACKET,         "); Serial.print(start_time,BIN); Serial.print(", "); Serial.println(start_usec_offset,BIN);
-    Serial.print("TIMEPACKET DECODED, "); Serial.print(start_time,HEX); Serial.print(", "); Serial.println(start_usec_offset);
+    Serial.print("TIMEPACKET,         "); Serial.print(Hours,BIN); Serial.print(start_time,BIN); Serial.print(", "); Serial.println(start_usec_offset,BIN);
+    Serial.print("TIMEPACKET DECODED, "); Serial.print(Hours,HEX); Serial.print(start_time,HEX); Serial.print(", "); Serial.println(start_usec_offset);
 
 } // end SETUP
 
@@ -227,7 +233,7 @@ void loop() {
     checksum += getChecksum(data_ch1.peak_val);
     checksum += getChecksum(data_ch1.tempRaw);
     
-    send_data(data_ch1.send_channel, ticStamp, uSecStamp, data_ch1.peak_val, data_ch1.tempRaw, checksum);
+    send_data(startByte, data_ch1.send_channel, ticStamp, uSecStamp, data_ch1.peak_val, data_ch1.tempRaw, checksum);
 
     //debugging print statements in function below
     print_debug(data_ch1, "1", ticStamp, uSecStamp);
@@ -251,7 +257,7 @@ void loop() {
     checksum += getChecksum(data_ch2.peak_val);
     checksum += getChecksum(data_ch2.tempRaw);    
     
-    send_data(data_ch2.send_channel, ticStamp, uSecStamp, data_ch2.peak_val, data_ch2.tempRaw, checksum);
+    send_data(startByte, data_ch2.send_channel, ticStamp, uSecStamp, data_ch2.peak_val, data_ch2.tempRaw, checksum);
     
     //debugging print statements in function below
     print_debug(data_ch2, "2", ticStamp, uSecStamp);
@@ -275,7 +281,7 @@ void loop() {
     checksum += getChecksum(data_ch3.peak_val);
     checksum += getChecksum(data_ch3.tempRaw);    
     
-    send_data(data_ch3.send_channel, ticStamp, uSecStamp, data_ch3.peak_val, data_ch3.tempRaw, checksum);    
+    send_data(startByte, data_ch3.send_channel, ticStamp, uSecStamp, data_ch3.peak_val, data_ch3.tempRaw, checksum);    
 
     //debugging print statements in function below
     print_debug(data_ch3, "3", ticStamp, uSecStamp);
@@ -299,7 +305,7 @@ void loop() {
     checksum += getChecksum(data_ch4.peak_val);
     checksum += getChecksum(data_ch4.tempRaw);
 
-    send_data(data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw, checksum);
+    send_data(startByte, data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw, checksum);
 
     //debugging print statements in function below
     print_debug(data_ch4, "4", ticStamp, uSecStamp);

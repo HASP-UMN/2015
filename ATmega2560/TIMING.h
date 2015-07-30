@@ -40,7 +40,7 @@ int RTC_GET_TEMP(){
   Wire.requestFrom(DS3231, 2);
   int MSB = Wire.read();
   unsigned int LSB = Wire.read();
-  int rtcTemp =  MSB<<8 | LSB;
+  int rtcTemp =  MSB<<7 | LSB>>1;
   return rtcTemp;
 }
 void RTC_PRINT_TIME(){// !!! PRINT_TIME SHOULD ONLY BE USED FOR DEBUGGING !!!
