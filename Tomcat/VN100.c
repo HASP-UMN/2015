@@ -32,11 +32,32 @@ unsigned char vn100_B115200[] = "$VNWRG,5,115200*60\n";
 
 // VN100 Commands: Async Commands
 unsigned char vn100_async_none[] = "$VNWRG,6,0*5C\n";
-unsigned char vn100_async_imu[] = "$VNWRG,6,19*64\n";
-unsigned char vn100_async_ins[] = "$VNWRG,6,22*6C\n";
 
 // VN100 Commands: IMU Read Requests
 unsigned char readCalibratedData[] = "$VNRRG,54*72\n";
+
+// Timing
+struct timeval spec;
+long stime;
+long mtime;
+
+// Checksum
+unsigned char Checksum;
+unsigned char bufCheck[2];
+
+
+void send_read_command(struct imu* imuData_ptr){
+
+	// Sends a read register command to IMU (Register 54)
+	write(imuData_ptr->imu_fd, &readCalibratedData[0], sizeof(readCalibratedData));
+
+    // Get time that VN100 makes a measurement
+    gettimeofday(&spec, NULL);
+    stime = spec.tv_sec;
+    mtime = spec.tv_usec/1000;
+
+    return;
+}
 
 // Initializes the file descriptor to read and write to the VN100 IMU.
 void init_vn100(struct imu* imuData_ptr){
@@ -92,6 +113,11 @@ void init_vn100(struct imu* imuData_ptr){
         return;
     }
 
+    // The read command must be sent now so the IMU has data available when the
+    // Tomcat does its first read. The IMU opeates at 200 Hz, so if the read command
+    // is sent immediately before the Tomcat reads, there won't be data available yet.
+    send_read_command(imuData_ptr);
+
 	return;
 }//end init_vn100()
 
@@ -122,11 +148,6 @@ void read_vn100(struct imu* imuData_ptr){
 	size_t bytesToRead;
 	int idx;
 
-	// Sends a write register command to register #6 on the IMU.
-	// This tells the IMU to send back the proper information.
-	// See the VN100 User Manual for more information.
-	write(imuData_ptr->imu_fd, &readCalibratedData[0], sizeof(readCalibratedData));
-
 	// Deterimes how many bytes to read back from the IMU. Exits on error.
 	if (ioctl(imuData_ptr->imu_fd, FIONREAD, &bytesToRead) < 0){
         return;
@@ -148,23 +169,35 @@ void read_vn100(struct imu* imuData_ptr){
 	}//endif
 
     // Checksum
-	unsigned char Checksum = calculateChecksum(imuData_ptr->dataBuffer,bytesToRead);                                    // Calculated Checksum
-	unsigned char bufCheck[] = {imuData_ptr->dataBuffer[bytesToRead - 4], imuData_ptr->dataBuffer[bytesToRead - 3]};    // Received Checksum
+	Checksum = calculateChecksum(imuData_ptr->dataBuffer,bytesToRead);     // Calculated Checksum
+	bufCheck[0] = imuData_ptr->dataBuffer[bytesToRead - 4];                // Received Checksum
+	bufCheck[1] = imuData_ptr->dataBuffer[bytesToRead - 3];
 	// Compares the calculated checksum to received checksum
 	if (Checksum != strtol(bufCheck, NULL, 16)){
         reportError(ERR_IMU_READCHECK);
 		return;
     }//endif
 
+    // Adds timestamp
+    sprintf(imuData_ptr->dataBuffer + 113, ",T%d.%03d", stime, mtime);
+    imuData_ptr->dataBuffer[129] = '\n';
+
     // Writes the data to the IMU structure
     imuData_ptr->Temp = (float)atof(substring(imuData_ptr->dataBuffer, 94, 98));
 
     // Write IMU VN100 data to a file
-	fwrite(imuData_ptr->dataBuffer, sizeof(imuData_ptr->dataBuffer[0]), bytesToRead - 1, imuData_ptr->VN100File);
+	fwrite(imuData_ptr->dataBuffer, sizeof(imuData_ptr->dataBuffer[0]), sizeof(imuData_ptr->dataBuffer), imuData_ptr->VN100File);
 	//fwrite(imuData_ptr->dataBuffer, sizeof(imuData_ptr->dataBuffer[0]), bytesToRead - 1, stderr);  // For Debugging
 
     // Should automatically flush if we add \n to the end of each string to be written, will check on this
 	fflush(imuData_ptr->VN100File);
+
+
+	// The read command must be sent now so the IMU has data available when the
+    // Tomcat does its next read. The IMU opeates at 200 Hz, so if the read command
+    // is sent immediately before the Tomcat reads, there won't be data available yet.
+    send_read_command(imuData_ptr);
+
 
     return;
 }//end read_vn100

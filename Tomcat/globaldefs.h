@@ -82,7 +82,7 @@ struct imu
     // GPS I/O
     int imu_fd;                     // GPS receiver serial communication file descriptor
     FILE* VN100File;                // GPS file to write data to
-    char dataBuffer[115];
+    char dataBuffer[130];
 
     // AMBIENT PAYLOAD TEMPERATURE (TELEMETRY PACKET BYTES 73-78)
     float Temp;     // [C]

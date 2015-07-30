@@ -221,15 +221,17 @@ void read_GPS(struct gps *gpsData_ptr)
 			gpsData_ptr->time = *((long *)(&response[16]));
 
 
-            // Obsolete - Possibly
 			// Set system time from GPS if it is good
-            //if(gpsData_ptr->timeStatus == 80 || gpsData_ptr->timeStatus == 100 || gpsData_ptr->timeStatus == 120 ||gpsData_ptr->timeStatus == 140 || gpsData_ptr->timeStatus == 160 || gpsData_ptr->timeStatus == 170 || gpsData_ptr->timeStatus == 180)
-			//{
-			//	time_t unixSeconds = 315964800 + (24*7*3600*gpsData_ptr->weekRef + gpsData_ptr->time/1000);
-			//	time_t *timeSeconds = &unixSeconds;
-			//	fprintf(stderr,"GPS Unix Seconds: %d", timeSeconds);
-			//	stime(timeSeconds);
-			//}
+            if(gpsData_ptr->timeStatus == 80 || gpsData_ptr->timeStatus == 100 || gpsData_ptr->timeStatus == 120 ||gpsData_ptr->timeStatus == 140 || gpsData_ptr->timeStatus == 160 || gpsData_ptr->timeStatus == 170 || gpsData_ptr->timeStatus == 180)
+			{
+				time_t unixSeconds = 315964800 + (24*7*3600*gpsData_ptr->weekRef + gpsData_ptr->time/1000);
+				time_t *timeSeconds = &unixSeconds;
+				// fprintf(stderr,"GPS Unix Seconds: %d", timeSeconds);
+				stime(timeSeconds);
+			}
+			else{
+                // report error
+			}
 
             posValid = !GetBitMask(response,20 + pCount,19);
             gpsData_ptr->lastPosVal = posValid;

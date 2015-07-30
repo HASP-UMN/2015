@@ -45,9 +45,9 @@ unsigned long imuStamp,gpsStamp,telStamp,eventStamp;
 int imu_fd;
 
 // buffer for reading from photon data fifo
-#define 		     PHOTON_BUF_MAX 500
+#define 		     PHOTON_BUF_MAX 512
 unsigned char        PHOTON_DATA_BUFFER[PHOTON_BUF_MAX];
-#define              BYTES_PER_PHOTON 10
+#define              BYTES_PER_PHOTON 16
 int                  PHOTONS_AQUIRED = 0;
 
 // ISA BUS INPUT PORT
@@ -68,7 +68,7 @@ state checkState(state SMSTATE)
     switch (SMSTATE) {
         case IDLE:
 
-            if ( (time - imuStamp) >= 500){
+            if ( (time - imuStamp) >= 25){
                 SMSTATE = RD_IMU;
             }
             else if ( (time - gpsStamp) >= 1000){
@@ -88,7 +88,7 @@ state checkState(state SMSTATE)
         case RD_IMU:
 
             fprintf(stderr, "\nstate = RD_IMU\n");
-            read_vn100(&imuData);
+//            read_vn100(&imuData);
             imuStamp = get_timestamp_ms();
             SMSTATE = IDLE;
             break;
@@ -96,7 +96,7 @@ state checkState(state SMSTATE)
         case RD_GPS:
 
             fprintf(stderr, "\nstate = RD_GPS\n");
-            read_GPS(&gpsData);
+  //          read_GPS(&gpsData);
             gpsStamp = get_timestamp_ms();
             SMSTATE = IDLE;
             break;
@@ -104,8 +104,8 @@ state checkState(state SMSTATE)
         case TELEMETRY:
 
             fprintf(stderr, "\nstate = TELEMETRY\n");
-            getErrorWord();
-            send_telemetry(&imuData,&gpsData,&photonData);
+    //        getErrorWord();
+      //      send_telemetry(&imuData,&gpsData,&photonData);
             telStamp = get_timestamp_ms();
             SMSTATE = IDLE;
             break;
@@ -134,19 +134,15 @@ int main()
 {
 
     // Initialize IMU
-	//imu_fd = init_vn100();
-	//VN100File = fopen(IMU_DATAFILE,"a");
-	init_vn100(&imuData);
+	//init_vn100(&imuData);
 
     // Initialize GPS
-	init_GPS(&gpsData);
+	//init_GPS(&gpsData);
 
     // Initialize Telemetry
-    init_telemetry();
+    //init_telemetry();
 
-// add init for gps and telemetry here
 	t_0 = get_timestamp_ms();
-//    t = get_timestamp_ms() - t_0; // pointless
 	eventStamp = t_0;
 	gpsStamp = t_0;
 	imuStamp = t_0;
@@ -159,7 +155,7 @@ int main()
 
 
     // next fork a child to call read on the fifo device in while(1)
-/*
+
     pid_t childpid;
     if ( (childpid = fork()) < 0)
 	{
@@ -167,31 +163,30 @@ int main()
 	}
 
   	if (childpid == 0 )
-    {
+	{
         //child code
 		execl("./read_fifo_store_data", "read_fifo_store_data", (char*) 0);
 		fprintf(stderr, "Child failed to execl command\n");
 		return -1;
 	}
-*/
+
 
     state SMSTATE = IDLE;
-	int child_status;
+//	int child_status;
     while (1)
     {
         t = get_timestamp_ms() - t_0;
         SMSTATE = checkState(SMSTATE);
-	/*	if ( waitpid(childpid, &child_status, WNOHANG) == childpid)// just for testing, not flight code
+/*		if ( waitpid(childpid, &child_status, WNOHANG) == childpid)// just for testing, not flight code
 		{
 			break;
-		} */
+		}
+*/
     }
 
     // Close IMU Data File
-	fclose(VN100File);
+	//fclose(VN100File);
 
-	// Close GPS Data File
-//	fclose(GPSDataFile);
 
     // need to prob send a kill() to child process and then wait();
 
