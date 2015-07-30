@@ -13,7 +13,7 @@
 #define DS3231 0x68       // RTC defined address    1101000    
 
 // VARIABLES:
-volatile unsigned long ticCount = 0;
+volatile unsigned int ticCount = 0;
 volatile unsigned long uSec = 0;
 volatile unsigned long uSecOffset = 0;
 
@@ -30,17 +30,17 @@ unsigned long RTC_GET_TIME(){
   unsigned long Seconds = Wire.read();
   unsigned long Minutes = Wire.read();
   unsigned long Hours   = Wire.read();
-  unsigned long rtcTime =  0x0000FF<<24 | Hours<<16 | Minutes<<8 | Seconds;
+  unsigned long rtcTime =  Hours<<14 | Minutes<<7 | Seconds;
   return rtcTime;
 }
-unsigned int RTC_GET_TEMP(){
+int RTC_GET_TEMP(){
   Wire.beginTransmission(DS3231);
   Wire.write(0x11);
   Wire.endTransmission();
   Wire.requestFrom(DS3231, 2);
-  unsigned int MSB = Wire.read();
+  int MSB = Wire.read();
   unsigned int LSB = Wire.read();
-  unsigned int rtcTemp =  MSB<<8 | LSB;
+  int rtcTemp =  MSB<<8 | LSB;
   return rtcTemp;
 }
 void RTC_PRINT_TIME(){// !!! PRINT_TIME SHOULD ONLY BE USED FOR DEBUGGING !!!
