@@ -227,12 +227,12 @@ void loop() {
     ticStamp  = ticCount;        // Get current gpsPPS number of seconds since data begin (ticCount).
     
     data_ch1 = get_data(data_ch1);
-    
-    checksum =  getChecksum(data_ch1.send_channel);
-    checksum += getChecksum(uSecStamp);
-    checksum += getChecksum(ticStamp);
-    checksum += getChecksum(data_ch1.peak_val);
-    checksum += getChecksum(data_ch1.tempRaw);
+    checksum = calculate_checksum(data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw);    
+//    checksum =  getChecksum(data_ch1.send_channel);
+//    checksum += getChecksum(uSecStamp);
+//    checksum += getChecksum(ticStamp);
+//    checksum += getChecksum(data_ch1.peak_val);
+//    checksum += getChecksum(data_ch1.tempRaw);
     
     send_data(startByte, data_ch1.send_channel, ticStamp, uSecStamp, data_ch1.peak_val, data_ch1.tempRaw, checksum);
 
@@ -251,12 +251,12 @@ void loop() {
     ticStamp  = ticCount;        // Get current gpsPPS number of seconds since data begin (ticCount).
     
     data_ch2 = get_data(data_ch2);
-
-    checksum = getChecksum(data_ch2.send_channel);
-    checksum += getChecksum(uSecStamp);
-    checksum += getChecksum(ticStamp);
-    checksum += getChecksum(data_ch2.peak_val);
-    checksum += getChecksum(data_ch2.tempRaw);    
+    checksum = calculate_checksum(data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw);
+//    checksum = getChecksum(data_ch2.send_channel);
+//    checksum += getChecksum(uSecStamp);
+//    checksum += getChecksum(ticStamp);
+//    checksum += getChecksum(data_ch2.peak_val);
+//    checksum += getChecksum(data_ch2.tempRaw);    
     
     send_data(startByte, data_ch2.send_channel, ticStamp, uSecStamp, data_ch2.peak_val, data_ch2.tempRaw, checksum);
     
@@ -275,12 +275,12 @@ void loop() {
     ticStamp  = ticCount;        // Get current gpsPPS number of seconds since data begin (ticCount).
     
     data_ch3 = get_data(data_ch3);
-    
-    checksum = getChecksum(data_ch3.send_channel);
-    checksum += getChecksum(uSecStamp);
-    checksum += getChecksum(ticStamp);
-    checksum += getChecksum(data_ch3.peak_val);
-    checksum += getChecksum(data_ch3.tempRaw);    
+    checksum = calculate_checksum(data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw);
+//    checksum = getChecksum(data_ch3.send_channel);
+//    checksum += getChecksum(uSecStamp);
+//    checksum += getChecksum(ticStamp);
+//    checksum += getChecksum(data_ch3.peak_val);
+//    checksum += getChecksum(data_ch3.tempRaw);    
     
     send_data(startByte, data_ch3.send_channel, ticStamp, uSecStamp, data_ch3.peak_val, data_ch3.tempRaw, checksum);    
 
@@ -299,12 +299,12 @@ void loop() {
     ticStamp  = ticCount;        // Get current gpsPPS number of seconds since data begin (ticCount).
     
     data_ch4 = get_data(data_ch4);
-
-    checksum = getChecksum(data_ch4.send_channel);
-    checksum += getChecksum(uSecStamp);
-    checksum += getChecksum(ticStamp);
-    checksum += getChecksum(data_ch4.peak_val);
-    checksum += getChecksum(data_ch4.tempRaw);
+    checksum = calculate_checksum(data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw);    
+//    checksum = getChecksum(data_ch4.send_channel);
+//    checksum += getChecksum(uSecStamp);
+//    checksum += getChecksum(ticStamp);
+//    checksum += getChecksum(data_ch4.peak_val);
+//    checksum += getChecksum(data_ch4.tempRaw);
 
     send_data(startByte, data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw, checksum);
 
@@ -350,6 +350,25 @@ ADC_data get_data(ADC_data data) {
     PORTH = PORTH & ~data.reset; // Toggle PK_RST3 LOW
     return data;       
 }
+
+unsigned int calculate_checksum(byte channel, unsigned int ticStamp,
+              unsigned long uSecStamp, uint16_t peak, uint16_t tempRaw){
+
+  unsigned int checksum = 0;
+  checksum += channel;
+  checksum += ticStamp & 0xFF;
+  checksum += (ticStamp & 0xFF00) >> 8;
+  checksum += uSecStamp & 0xFF;
+  checksum += (uSecStamp & 0xFF00) >> 8;
+  checksum += (uSecStamp & 0xFF0000) >> 16;
+  checksum += (peak & 0xFF);
+  checksum += (peak & 0xFF00) >> 8;
+  checksum += (tempRaw & 0xFF);
+  checksum += (tempRaw & 0xFF00) >> 8;
+  return checksum;
+}
+
+
 
 void send_data(byte startByte, byte channel, unsigned int ticStamp, 
                unsigned long uSecStamp, uint16_t peak, uint16_t tempRaw, uint16_t checksum){
@@ -427,6 +446,9 @@ byte startByte, byte channel, unsigned int ticStamp, unsigned long uSecStamp, ui
     RTC_PRINT_TIME();
     Serial.println();
 }
+
+
+
 
 unsigned int getChecksum(unsigned int value) {
     unsigned int h1, h2, h3;
