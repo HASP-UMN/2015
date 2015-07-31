@@ -34,7 +34,9 @@ void init(){
 	sei();
 	
 	PRESENT_DATA = 0B00010010; // Buffer enabled, fifo_read enabled, isa off (high), iochrdy high (going for ready timing)
+	IOCHRDY_HIGH = 0B00010000;
 	BUFFER_DISABLE = 0B00110011; // buffer disabled, fifo_read disabled
+	
 	RESERVED = 0B00000000;
 	SREG_SAVE = 0B00000000;
 

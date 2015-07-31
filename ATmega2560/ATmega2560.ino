@@ -32,7 +32,7 @@
 #define H3 36344967696
 #define H4 4841987667533046032
 unsigned int checksum = 0;
-byte startByte = 0xF0;
+byte startByte = 0x00;
 
 // Time Data definitions
 unsigned int ticStamp  = 0; // used for passing current  sec to data stream.
@@ -101,7 +101,7 @@ void setup() {
   // Open serial port
   Serial.begin(115200); Serial.flush();
   Serial.println("Channel, PeakVal, TempRaw, Seconds, uSeconds, rtcTime");
-  Serial.println("===============================================================");
+  Serial.println("=====================================================");
 
   cli(); // HOLD interrupts while new interrupts are set.
   
@@ -204,11 +204,12 @@ void setup() {
     unsigned int Minutes = Wire.read();
     byte Hours           = Wire.read();
     start_time =  Minutes<<8 | init_time2;
-    send_data(0x00, Hours, start_time, start_usec_offset, 0xFFFF, 0xFFFF, 0xFFFF);
+    send_data(0x00, Hours, start_time, start_usec_offset, 0x1122, 0x3344, 0x5566);
 
     // Debugging print statements below.
     Serial.print("TIMEPACKET,         "); Serial.print(Hours,BIN); Serial.print(start_time,BIN); Serial.print(", "); Serial.println(start_usec_offset,BIN);
-    Serial.print("TIMEPACKET DECODED, "); Serial.print(Hours,HEX); Serial.print(start_time,HEX); Serial.print(", "); Serial.println(start_usec_offset);
+    Serial.print("TIMEPACKET DECODED, "); Serial.print(Hours,HEX); Serial.print(start_time,HEX); Serial.print(", "); Serial.println(start_usec_offset,HEX);
+    Serial.print("TIMEPACKET DECODED, "); Serial.print(Hours,DEC); Serial.print(start_time,DEC); Serial.print(", "); Serial.println(start_usec_offset,DEC);
 
 } // end SETUP
 
@@ -236,7 +237,7 @@ void loop() {
     send_data(startByte, data_ch1.send_channel, ticStamp, uSecStamp, data_ch1.peak_val, data_ch1.tempRaw, checksum);
 
     //debugging print statements in function below
-    print_debug(data_ch1, "1", ticStamp, uSecStamp);
+    print_debug(data_ch1, "1", ticStamp, uSecStamp, checksum);
 
     // Reset peak value and interrupt flag for CH1
     newEventCH1 = false;
@@ -260,7 +261,7 @@ void loop() {
     send_data(startByte, data_ch2.send_channel, ticStamp, uSecStamp, data_ch2.peak_val, data_ch2.tempRaw, checksum);
     
     //debugging print statements in function below
-    print_debug(data_ch2, "2", ticStamp, uSecStamp);
+    print_debug(data_ch2, "2", ticStamp, uSecStamp, checksum);
     
     // Reset peak value and interrupt flag for CH2
     newEventCH2 = false;
@@ -284,7 +285,7 @@ void loop() {
     send_data(startByte, data_ch3.send_channel, ticStamp, uSecStamp, data_ch3.peak_val, data_ch3.tempRaw, checksum);    
 
     //debugging print statements in function below
-    print_debug(data_ch3, "3", ticStamp, uSecStamp);
+    print_debug(data_ch3, "3", ticStamp, uSecStamp, checksum);
     
     // Reset peak value and interrupt flag for CH3
     newEventCH3 = false;
@@ -308,7 +309,7 @@ void loop() {
     send_data(startByte, data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw, checksum);
 
     //debugging print statements in function below
-    print_debug(data_ch4, "4", ticStamp, uSecStamp);
+    print_debug(data_ch4, "4", ticStamp, uSecStamp, checksum);
 
     // Reset peak value and interrupt flag for CH4
     newEventCH4 = false;
@@ -403,19 +404,27 @@ void send_data(byte startByte, byte channel, unsigned int ticStamp,
     
 }
 
-void print_debug(ADC_data data, char* channel_char, unsigned long ticStamp, unsigned long uSecStamp) {
+void print_debug(ADC_data data, char* channel_char, unsigned long ticStamp, unsigned long uSecStamp, uint16_t checksum) {
   
     uint8_t  channel = data.read_channel;
     uint16_t peak_val = data.peak_val;
     uint16_t tempRaw = data.tempRaw;
 
-    Serial.print(channel_char); Serial.print(", ");
-    Serial.print(peak_val); Serial.print(", ");
-    Serial.print(tempRaw); Serial.print(", ");
-    Serial.print(ticStamp); Serial.print(", ");
-    Serial.print(uSecStamp); Serial.print(", ");
+/*
+byte startByte, byte channel, unsigned int ticStamp, unsigned long uSecStamp, uint16_t peak, uint16_t tempRaw, uint16_t checksum
+ */
+
+
+    Serial.print("FF");Serial.print(channel_char); Serial.print(", ");
+    Serial.print(ticStamp,HEX); Serial.print(" ");
+    Serial.print(uSecStamp,HEX); Serial.print(" ");
+    Serial.print(peak_val,HEX); Serial.print(", ");
+    Serial.print(tempRaw,HEX); Serial.print(", ");
+    Serial.print(checksum,HEX); Serial.print(",");
+    
+    
+    Serial.print("Raw rtc Time: ");
     RTC_PRINT_TIME();
-    Serial.print("\t\t"); Serial.print(RTC_GET_TEMP());
     Serial.println();
 }
 
