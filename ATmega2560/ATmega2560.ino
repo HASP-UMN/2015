@@ -204,7 +204,7 @@ void setup() {
     unsigned int Minutes = Wire.read();
     byte Hours           = Wire.read();
     start_time =  Minutes<<8 | init_time2;
-    send_data(0x00, Hours, start_time, start_usec_offset, 0x1122, 0x3344, 0x5566);
+    send_data(0x00, Hours, start_time, start_usec_offset, 0xFFFF, 0xFFFF, 0xFFFF);
 
     // Debugging print statements below.
     Serial.print("TIMEPACKET,         "); Serial.print(Hours,BIN); Serial.print(start_time,BIN); Serial.print(", "); Serial.println(start_usec_offset,BIN);
@@ -423,7 +423,7 @@ byte startByte, byte channel, unsigned int ticStamp, unsigned long uSecStamp, ui
     Serial.print(checksum,HEX); Serial.print(",");
     
     
-    Serial.print("Raw rtc Time: ");
+    Serial.print("Raw rtc Time:");
     RTC_PRINT_TIME();
     Serial.println();
 }
