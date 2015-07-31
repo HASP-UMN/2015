@@ -21,12 +21,22 @@
 
   // Port masks for Port H
 #define ADC_CS   0B01000000
-#define PK_RST1  0B00100000
-#define PK_RST2  0B00010000
-#define PK_RST3  0B00001000
-#define PK_RST4  0B00000100
+#define PK_RST1  0B00100011
+#define PK_RST2  0B00010011
+#define PK_RST3  0B00001011
+#define PK_RST4  0B00000111
+#define PK_RST_DEASSERT 0B01000011
+
+//register uint8_t ADC_CS_ASSERT asm("r18");
+//register uint8_t ADC_CS_DEASSERT asm("r19");
+#define ADC_CS_ASSERT 0B00000011
+#define ADC_CS_DEASSERT 0B01000011
+
+
 #define FIFO_RST 0B00000010
 #define FIFO_WR  0B00000001
+#define FIFO_WR_ASSERT 0B01000010   //see PORTH on eagle file: FIFO_WR active low
+#define FIFO_WR_DEASSERT 0B01000011
 
 // Checksum definitions
 #define H3 36344967696
@@ -110,6 +120,11 @@ void setup() {
   // Initialize the digital outputs. PORTH is the register for the state of the outputs.
   PORTH = B01000011;
   
+  //ADC_CS_ASSERT = 0B00000011; 
+  Serial.print("CS_ASSERT: "); Serial.println(ADC_CS_ASSERT);
+  //ADC_CS_DEASSERT = 0B01000011; 
+  Serial.print("CS_DEASSERT: "); Serial.println(ADC_CS_DEASSERT);
+  
   // PORT F (digital output)
   // Set up Port F on the ATmega2560 as an output port. DDRF is the direction register for Port F.
   DDRF = DDRF | B11111111;
@@ -163,8 +178,8 @@ void setup() {
   data_ch3.reset = PK_RST3;
   data_ch4.reset = PK_RST4;
 
-  delay(120000); // Allows TOMCAT to boot and start data collection before sending data.
-
+  //delay(120000); // Allows TOMCAT to boot and start data collection before sending data.
+  delay(15000);
   // Start RTC and send System Start Time to FIFO
   Wire.begin(DS3231);   // Initializes RTC 
   unsigned int init_time1 = 0;
@@ -204,7 +219,7 @@ void setup() {
     unsigned int Minutes = Wire.read();
     byte Hours           = Wire.read();
     start_time =  Minutes<<8 | init_time2;
-    send_data(0x00, Hours, start_time, start_usec_offset, 0xFFFF, 0xFFFF, 0xFFFF);
+//    send_data(0x00, Hours, start_time, start_usec_offset, 0xFFFF, 0xFFFF, 0xFFFF);
 
     // Debugging print statements below.
     Serial.print("TIMEPACKET,         "); Serial.print(Hours,BIN); Serial.print(start_time,BIN); Serial.print(", "); Serial.println(start_usec_offset,BIN);
@@ -227,15 +242,10 @@ void loop() {
     ticStamp  = ticCount;        // Get current gpsPPS number of seconds since data begin (ticCount).
     
     data_ch1 = get_data(data_ch1);
+    checksum = calculate_checksum(data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw);        
+    //send_data(startByte, data_ch1.send_channel, ticStamp, uSecStamp, data_ch1.peak_val, data_ch1.tempRaw, checksum);
+    send_data(&data_ch1, checksum);
     
-    checksum =  getChecksum(data_ch1.send_channel);
-    checksum += getChecksum(uSecStamp);
-    checksum += getChecksum(ticStamp);
-    checksum += getChecksum(data_ch1.peak_val);
-    checksum += getChecksum(data_ch1.tempRaw);
-    
-    send_data(startByte, data_ch1.send_channel, ticStamp, uSecStamp, data_ch1.peak_val, data_ch1.tempRaw, checksum);
-
     //debugging print statements in function below
     print_debug(data_ch1, "1", ticStamp, uSecStamp, checksum);
 
@@ -251,14 +261,9 @@ void loop() {
     ticStamp  = ticCount;        // Get current gpsPPS number of seconds since data begin (ticCount).
     
     data_ch2 = get_data(data_ch2);
-
-    checksum = getChecksum(data_ch2.send_channel);
-    checksum += getChecksum(uSecStamp);
-    checksum += getChecksum(ticStamp);
-    checksum += getChecksum(data_ch2.peak_val);
-    checksum += getChecksum(data_ch2.tempRaw);    
-    
-    send_data(startByte, data_ch2.send_channel, ticStamp, uSecStamp, data_ch2.peak_val, data_ch2.tempRaw, checksum);
+    checksum = calculate_checksum(data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw);
+    //send_data(startByte, data_ch2.send_channel, ticStamp, uSecStamp, data_ch2.peak_val, data_ch2.tempRaw, checksum);
+    send_data(&data_ch2, checksum);
     
     //debugging print statements in function below
     print_debug(data_ch2, "2", ticStamp, uSecStamp, checksum);
@@ -275,15 +280,10 @@ void loop() {
     ticStamp  = ticCount;        // Get current gpsPPS number of seconds since data begin (ticCount).
     
     data_ch3 = get_data(data_ch3);
+    checksum = calculate_checksum(data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw);
+//    send_data(startByte, data_ch3.send_channel, ticStamp, uSecStamp, data_ch3.peak_val, data_ch3.tempRaw, checksum);    
+    send_data(&data_ch3, checksum);
     
-    checksum = getChecksum(data_ch3.send_channel);
-    checksum += getChecksum(uSecStamp);
-    checksum += getChecksum(ticStamp);
-    checksum += getChecksum(data_ch3.peak_val);
-    checksum += getChecksum(data_ch3.tempRaw);    
-    
-    send_data(startByte, data_ch3.send_channel, ticStamp, uSecStamp, data_ch3.peak_val, data_ch3.tempRaw, checksum);    
-
     //debugging print statements in function below
     print_debug(data_ch3, "3", ticStamp, uSecStamp, checksum);
     
@@ -299,15 +299,9 @@ void loop() {
     ticStamp  = ticCount;        // Get current gpsPPS number of seconds since data begin (ticCount).
     
     data_ch4 = get_data(data_ch4);
-
-    checksum = getChecksum(data_ch4.send_channel);
-    checksum += getChecksum(uSecStamp);
-    checksum += getChecksum(ticStamp);
-    checksum += getChecksum(data_ch4.peak_val);
-    checksum += getChecksum(data_ch4.tempRaw);
-
-    send_data(startByte, data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw, checksum);
-
+    checksum = calculate_checksum(data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw);    
+//    send_data(startByte, data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw, checksum);
+    send_data(&data_ch4, checksum);
     //debugging print statements in function below
     print_debug(data_ch4, "4", ticStamp, uSecStamp, checksum);
 
@@ -320,30 +314,30 @@ void loop() {
 
 ADC_data get_data(ADC_data data) {
     
-    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
+    PORTH &= ~ADC_CS; // Toggle ADC_CS LOW
     SPI.transfer(MANUAL_READ_ADDR << 1);
     SPI.transfer(data.read_channel);
-    PORTH = PORTH | ADC_CS; // Toggle ADC_CS HIGH
+    PORTH |= ADC_CS; // Toggle ADC_CS HIGH
       
     // Read temp sensor
-    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
+    PORTH &= ~ADC_CS; // Toggle ADC_CS LOW
     SPI.transfer(MANUAL_READ_ADDR << 1);
     SPI.transfer(READ_TEMP);
-    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
+    PORTH |= ADC_CS; // Toggle ADC_CS HIGH
 
     // Get channel data
-    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
+    PORTH &= ~ADC_CS; // Toggle ADC_CS LOW
     data.peak_val = SPI.transfer(0) & 0x0F;
     data.peak_val = data.peak_val << 8;
     data.peak_val += SPI.transfer(0);
-    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
+    PORTH |= ADC_CS; // Toggle ADC_CS HIGH
     
     // Get temp sensor data
-    PORTH = PORTH & ~ADC_CS; // Toggle ADC_CS LOW
+    PORTH &= ~ADC_CS; // Toggle ADC_CS LOW
     data.tempRaw = SPI.transfer(0) & 0xFF;
     data.tempRaw = data.tempRaw << 8;
     data.tempRaw += SPI.transfer(0);
-    PORTH = PORTH |  ADC_CS; // Toggle ADC_CS HIGH
+    PORTH |= ADC_CS; // Toggle ADC_CS HIGH
 
     // Reset the peak detector. PH3 (the 4th bit of Port H) is the CH3 reset signal.
     PORTH = PORTH | data.reset; // Toggle PK_RST3 HIGH
@@ -351,57 +345,77 @@ ADC_data get_data(ADC_data data) {
     return data;       
 }
 
-void send_data(byte startByte, byte channel, unsigned int ticStamp, 
-               unsigned long uSecStamp, uint16_t peak, uint16_t tempRaw, uint16_t checksum){
+unsigned int calculate_checksum(byte channel, unsigned int ticStamp,
+              unsigned long uSecStamp, uint16_t peak, uint16_t tempRaw){
 
-    PORTF = (startByte | channel);               //1rst byte        
-    PORTH = PORTH & ~FIFO_WR; 
-    PORTH = PORTH |  FIFO_WR; 
+  unsigned int checksum = 0;
+  checksum += channel;
+  checksum += ticStamp & 0xFF;
+  checksum += (ticStamp & 0xFF00) >> 8;
+  checksum += uSecStamp & 0xFF;
+  checksum += (uSecStamp & 0xFF00) >> 8;
+  checksum += (uSecStamp & 0xFF0000) >> 16;
+  checksum += (peak & 0xFF);
+  checksum += (peak & 0xFF00) >> 8;
+  checksum += (tempRaw & 0xFF);
+  checksum += (tempRaw & 0xFF00) >> 8;
+  return checksum;
+}
+
+
+
+//void send_data(byte startByte, byte channel, unsigned int ticStamp, 
+  //             unsigned long uSecStamp, uint16_t peak, uint16_t tempRaw, uint16_t checksum){
+
+void send_data(ADC_data* data, unsigned int checksum){
+
+    PORTF = data->send_channel;               //1rst byte        
+    PORTH = FIFO_WR_ASSERT; 
+    PORTH = FIFO_WR_DEASSERT; 
+
+    PORTF = (ticStamp  & 0xFF00)>>8;         //3rd byte        
+    PORTH = FIFO_WR_ASSERT; 
+    PORTH = FIFO_WR_DEASSERT;
   
     PORTF = (ticStamp  & 0xFF);              //2nd byte        
-    PORTH = PORTH & ~FIFO_WR; 
-    PORTH = PORTH |  FIFO_WR; 
-  
-    PORTF = (ticStamp  & 0xFF00)>>8;         //3rd byte        
-    PORTH = PORTH & ~FIFO_WR;
-    PORTH = PORTH |  FIFO_WR;
-        
-    PORTF = (uSecStamp  & 0xFF);              //4th byte        
-    PORTH = PORTH & ~FIFO_WR; 
-    PORTH = PORTH |  FIFO_WR; 
-  
-    PORTF = (uSecStamp  & 0xFF00)>>8;         //5th byte        
-    PORTH = PORTH & ~FIFO_WR;
-    PORTH = PORTH |  FIFO_WR;
+    PORTH = FIFO_WR_ASSERT; 
+    PORTH = FIFO_WR_DEASSERT;
 
     PORTF = (uSecStamp  & 0xFF0000)>>16;      //6th byte    
-    PORTH = PORTH & ~FIFO_WR;
-    PORTH = PORTH |  FIFO_WR;
-    
-    PORTF = (peak & 0xFF);                    //7th byte    
-    PORTH = PORTH & ~FIFO_WR;
-    PORTH = PORTH |  FIFO_WR;
-    
-    PORTF = (peak & 0xFF00)>>8;               //8th byte        
-    PORTH = PORTH & ~FIFO_WR;
-    PORTH = PORTH |  FIFO_WR;
-    
-    PORTF = (tempRaw & 0xFF);                 //9th byte    
-    PORTH = PORTH & ~FIFO_WR;
-    PORTH = PORTH |  FIFO_WR;
+    PORTH = FIFO_WR_ASSERT; 
+    PORTH = FIFO_WR_DEASSERT;
 
-    PORTF = (tempRaw & 0xFF00)>>8;            //10th byte    
-    PORTH = PORTH & ~FIFO_WR;
-    PORTH = PORTH |  FIFO_WR;
+    PORTF = (uSecStamp  & 0xFF00)>>8;         //5th byte        
+    PORTH = FIFO_WR_ASSERT; 
+    PORTH = FIFO_WR_DEASSERT;
+        
+    PORTF = (uSecStamp  & 0xFF);              //4th byte        
+    PORTH = FIFO_WR_ASSERT; 
+    PORTH = FIFO_WR_DEASSERT; 
+
+    PORTF = (data->peak_val & 0xFF00)>>8;               //8th byte        
+    PORTH = FIFO_WR_ASSERT; 
+    PORTH = FIFO_WR_DEASSERT;
+    
+    PORTF = (data->peak_val & 0xFF);                    //7th byte    
+    PORTH = FIFO_WR_ASSERT; 
+    PORTH = FIFO_WR_DEASSERT;    
+
+    PORTF = (data->tempRaw & 0xFF00)>>8;            //10th byte    
+    PORTH = FIFO_WR_ASSERT; 
+    PORTH = FIFO_WR_DEASSERT;
+    
+    PORTF = (data->tempRaw & 0xFF);                 //9th byte    
+    PORTH = FIFO_WR_ASSERT; 
+    PORTH = FIFO_WR_DEASSERT;
+
+    PORTF = (checksum & 0xFF00)>>8;           //12th byte    
+    PORTH = FIFO_WR_ASSERT; 
+    PORTH = FIFO_WR_DEASSERT;
     
     PORTF = (checksum & 0xFF);                //11th byte    
-    PORTH = PORTH & ~FIFO_WR;
-    PORTH = PORTH |  FIFO_WR;
-    
-    PORTF = (checksum & 0xFF00)>>8;           //12th byte    
-    PORTH = PORTH & ~FIFO_WR;
-    PORTH = PORTH |  FIFO_WR;
-    
+    PORTH = FIFO_WR_ASSERT; 
+    PORTH = FIFO_WR_DEASSERT;    
 }
 
 void print_debug(ADC_data data, char* channel_char, unsigned long ticStamp, unsigned long uSecStamp, uint16_t checksum) {
@@ -427,6 +441,9 @@ byte startByte, byte channel, unsigned int ticStamp, unsigned long uSecStamp, ui
     RTC_PRINT_TIME();
     Serial.println();
 }
+
+
+
 
 unsigned int getChecksum(unsigned int value) {
     unsigned int h1, h2, h3;
