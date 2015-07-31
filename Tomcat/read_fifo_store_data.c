@@ -6,11 +6,14 @@
 //#include <resource.h>
 
 #include "globaldefs.h"
+#include "errorword.h"
 
 int read_fifo_store_data(int fifo_fd, int storage_fd, unsigned char* buf, size_t length);
 
 int main(int argc, char** argv)
 {
+    reportErrorPipe(ERR_TEST);
+
 	int fifo_fd, storage_fd;
 	fifo_fd = open("/dev/FIFO_DEV", O_RDONLY);
 	fprintf(stderr, "/dev/FIFO_DEV opened: fd = %d\n", fifo_fd);

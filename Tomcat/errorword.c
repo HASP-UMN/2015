@@ -9,6 +9,10 @@
 #include <stdio.h>       // Standard I/O Library
 #include <stdbool.h>     // Standard C Library for Boolean Capability
 #include <math.h>        // Mathematical operations
+#include <sys/stat.h>    // Named Pipes
+#include <fcntl.h>       // I/O
+#include <sys/ioctl.h>   // I/O
+#include <unistd.h>
 
 #include "globaldefs.h"
 #include "errorword.h"
@@ -33,9 +37,15 @@
 */
 
 
+#define ERROR_FIFO "ErrorPipe.fifo"
+#define FIFO_PERM (S_IRUSR | S_IWUSR)
+
+
 unsigned short currentMaskedErrorID = 0;
 unsigned short currentUnmaskedErrorID = 0;
 unsigned short maskedErrors[10] = {0,0,0,0,0,0,0,0,0,0};
+
+bool printErrors = true;
 
 
 void advanceErrorMask(unsigned int errorID){
@@ -80,11 +90,68 @@ void reportError(ERRWD errorID){
             currentMaskedErrorID = errorID;
         }
     }
-    fprintf(stderr,"############  HASP ERROR: %d  ############\n",errorID);  // For Debugging
+    if(printErrors==true){
+        fprintf(stderr,"############  HAXDT MAIN ERROR: %d  ############\n",errorID);  // For Debugging
+    }
+}
+
+
+void reportErrorPipe(ERRWD errorID){
+    int fd = open(ERROR_FIFO, O_WRONLY);
+    if(fd == -1){
+        return;
+    }
+    write(fd, &errorID, 2);
+    if(printErrors==true){
+        fprintf(stderr,"############  HAXDT PIPE ERROR: %d  ############\n",errorID);  // For Debugging
+    }
+    close(fd);
+    return;
+}
+
+
+void readErrorPipe(){
+    size_t bytesToRead;
+    unsigned short errorID;
+    bool currentPrintErrors = printErrors;
+    fprintf(stderr,"Open fd\n");
+    int fd = open(ERROR_FIFO, O_RDONLY);
+    if(fd == -1){
+        // report error
+        fprintf(stderr,"Open failed\n");
+        return;
+    }
+
+    printErrors = false;
+
+    fprintf(stderr,"ioctl\n");
+    if(ioctl(fd, FIONREAD, &bytesToRead) < 0){
+        // report error
+        fprintf(stderr,"ioctl failed\n");
+        return;
+    }
+    fprintf(stderr, "Bytes To Read: %d\n", bytesToRead);
+
+    while(bytesToRead > 0){
+        if(read(fd, &errorID, 2) < 0){
+            // report error
+            return;
+        }
+        reportError(errorID);
+        if(ioctl(fd, FIONREAD, &bytesToRead) < 0){
+            //report error
+            return;
+        }
+    }
+    close(fd);
+
+    printErrors = currentPrintErrors;
+    return;
 }
 
 
 void getErrorWord(){
+    // readErrorPipe();
     if(currentUnmaskedErrorID!=0){
         ERROR_WORD = currentUnmaskedErrorID;
         advanceErrorMask(currentUnmaskedErrorID);
@@ -99,6 +166,26 @@ void getErrorWord(){
     else{
         ERROR_WORD = 0;
     }
+    return;
+}
+
+
+void init_ErrorReporting(){
+
+    struct stat fifostat;
+
+    if(stat(ERROR_FIFO,&fifostat) == 0){
+        if(unlink((ERROR_FIFO)) < 0){
+            // report error
+            return;
+        }
+    }
+
+    if(mkfifo(ERROR_FIFO, FIFO_PERM) < 0){
+        // report error
+        return;
+    }
+
     return;
 }
 

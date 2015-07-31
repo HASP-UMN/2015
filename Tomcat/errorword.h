@@ -16,6 +16,7 @@
 */
 typedef enum ERRWD {
     ERR_NO_ERROR,
+    ERR_TEST,
     ERR_GPS_PORTOPEN,
     ERR_GPS_PORTGATT,
     ERR_GPS_PORTOBR,
@@ -50,7 +51,9 @@ ERRWD;
 
 
 void reportError(ERRWD errorID);
+void reportErrorPipe(ERRWD errorID);
 void getErrorWord();
+void init_ErrorReporting();
 
 
 #endif // ERRORWORD_H

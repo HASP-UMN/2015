@@ -34,11 +34,6 @@ struct imu imuData;
 struct gps gpsData;
 struct photons photonData;
 
-// IMU
-FILE* VN100File;
-#define imu_stream_length 131
-char imu_data[imu_stream_length];
-
 //Timestamps stored as longs
 unsigned long t, t_0;
 unsigned long imuStamp,gpsStamp,telStamp,eventStamp;
@@ -57,7 +52,7 @@ const unsigned short INPUT_PORT = 0x800; // base address
 
 //state machine state
 typedef enum state{
-    IDLE, RD_IMU, RD_GPS, TELEMETRY, EVENT_UPDATE, LOG_DATA
+    IDLE, RD_IMU, RD_GPS, TELEMETRY
 }
 state;
 
@@ -77,9 +72,6 @@ state checkState(state SMSTATE)
             else if ( (time - telStamp) >= 5000){
                 SMSTATE = TELEMETRY;
             }
-            else if ( (time - eventStamp) >= 5000){
-                SMSTATE = EVENT_UPDATE;
-            }
             else
                 SMSTATE = IDLE;
 
@@ -87,8 +79,8 @@ state checkState(state SMSTATE)
 
         case RD_IMU:
 
-            fprintf(stderr, "\nstate = RD_IMU\n");
-//            read_vn100(&imuData);
+            //fprintf(stderr, "\nstate = RD_IMU\n");
+            read_vn100(&imuData);
             imuStamp = get_timestamp_ms();
             SMSTATE = IDLE;
             break;
@@ -96,7 +88,7 @@ state checkState(state SMSTATE)
         case RD_GPS:
 
             fprintf(stderr, "\nstate = RD_GPS\n");
-  //          read_GPS(&gpsData);
+            read_GPS(&gpsData);
             gpsStamp = get_timestamp_ms();
             SMSTATE = IDLE;
             break;
@@ -104,19 +96,9 @@ state checkState(state SMSTATE)
         case TELEMETRY:
 
             fprintf(stderr, "\nstate = TELEMETRY\n");
-    //        getErrorWord();
-      //      send_telemetry(&imuData,&gpsData,&photonData);
+            getErrorWord();
+            send_telemetry(&imuData,&gpsData,&photonData);
             telStamp = get_timestamp_ms();
-            SMSTATE = IDLE;
-            break;
-
-        case EVENT_UPDATE:
-            fprintf(stderr, "\nstate = EVENT_UPDATE\n");
-            /*
-            updateEventCounter(&photonData);
-            */
-		    eventStamp = get_timestamp_ms();
-
             SMSTATE = IDLE;
             break;
 
@@ -133,14 +115,18 @@ state checkState(state SMSTATE)
 int main()
 {
 
+    // Initialize Error Reporting
+    init_ErrorReporting();
+
     // Initialize IMU
-	//init_vn100(&imuData);
+	init_vn100(&imuData);
 
     // Initialize GPS
-	//init_GPS(&gpsData);
+	init_GPS(&gpsData);
 
     // Initialize Telemetry
-    //init_telemetry();
+    init_telemetry();
+
 
 	t_0 = get_timestamp_ms();
 	eventStamp = t_0;
@@ -185,7 +171,7 @@ int main()
     }
 
     // Close IMU Data File
-	//fclose(VN100File);
+	fclose(imuData.VN100File);
 
 
     // need to prob send a kill() to child process and then wait();
