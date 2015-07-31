@@ -12,6 +12,8 @@
 #define IRQ_HIGH_DISABLE 0B00110001
 #define IOCHRDY 0B00010000
 
+extern void BALE_HANDLER_vect(void);
+
 ISR(INT1_vect){//HF
 	PORTF = IRQ_LOW_ENABLE;  //Pulling IRQ low and opening buffer because tomcat holds irqs high by default even though they're active high
 	PORTF = IRQ_HIGH_ENABLE;
@@ -38,7 +40,7 @@ void init(){
 
 
 	// delay 2 minutes
-	for(i = 0; i < 3200000000; i++){
+	for(i = 0; i < 1600000000; i++){
 		asm("nop");
 	}
 

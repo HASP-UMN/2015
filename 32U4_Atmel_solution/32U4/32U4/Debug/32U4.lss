@@ -3,33 +3,33 @@
 
 Sections:
 Idx Name          Size      VMA       LMA       File off  Algn
-  0 .text         0000011c  00000000  00000000  00000054  2**1
+  0 .text         0000012e  00000000  00000000  00000054  2**1
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
-  1 .comment      00000030  00000000  00000000  00000170  2**0
+  1 .comment      00000030  00000000  00000000  00000182  2**0
                   CONTENTS, READONLY
-  2 .debug_aranges 00000030  00000000  00000000  000001a0  2**0
+  2 .debug_aranges 00000050  00000000  00000000  000001b8  2**3
                   CONTENTS, READONLY, DEBUGGING
-  3 .debug_info   00000105  00000000  00000000  000001d0  2**0
+  3 .debug_info   00000179  00000000  00000000  00000208  2**0
                   CONTENTS, READONLY, DEBUGGING
-  4 .debug_abbrev 000000ac  00000000  00000000  000002d5  2**0
+  4 .debug_abbrev 000000c0  00000000  00000000  00000381  2**0
                   CONTENTS, READONLY, DEBUGGING
-  5 .debug_line   000000e6  00000000  00000000  00000381  2**0
+  5 .debug_line   00000124  00000000  00000000  00000441  2**0
                   CONTENTS, READONLY, DEBUGGING
-  6 .debug_frame  00000054  00000000  00000000  00000468  2**2
+  6 .debug_frame  00000054  00000000  00000000  00000568  2**2
                   CONTENTS, READONLY, DEBUGGING
-  7 .debug_str    0000015c  00000000  00000000  000004bc  2**0
+  7 .debug_str    00000162  00000000  00000000  000005bc  2**0
                   CONTENTS, READONLY, DEBUGGING
-  8 .debug_loc    0000003c  00000000  00000000  00000618  2**0
+  8 .debug_loc    0000003c  00000000  00000000  0000071e  2**0
                   CONTENTS, READONLY, DEBUGGING
-  9 .debug_ranges 00000020  00000000  00000000  00000654  2**0
+  9 .debug_ranges 00000020  00000000  00000000  0000075a  2**0
                   CONTENTS, READONLY, DEBUGGING
 
 Disassembly of section .text:
 
 00000000 <__vectors>:
    0:	0c 94 56 00 	jmp	0xac	; 0xac <__ctors_end>
-   4:	0c 94 60 00 	jmp	0xc0	; 0xc0 <__bad_interrupt>
-   8:	0c 94 62 00 	jmp	0xc4	; 0xc4 <__vector_2>
+   4:	0c 94 62 00 	jmp	0xc4	; 0xc4 <__vector_1>
+   8:	0c 94 6b 00 	jmp	0xd6	; 0xd6 <__vector_2>
    c:	0c 94 60 00 	jmp	0xc0	; 0xc0 <__bad_interrupt>
   10:	0c 94 60 00 	jmp	0xc0	; 0xc0 <__bad_interrupt>
   14:	0c 94 60 00 	jmp	0xc0	; 0xc0 <__bad_interrupt>
@@ -78,61 +78,125 @@ Disassembly of section .text:
   b2:	da e0       	ldi	r29, 0x0A	; 10
   b4:	de bf       	out	0x3e, r29	; 62
   b6:	cd bf       	out	0x3d, r28	; 61
-  b8:	0e 94 8a 00 	call	0x114	; 0x114 <main>
-  bc:	0c 94 8c 00 	jmp	0x118	; 0x118 <_exit>
+  b8:	0e 94 93 00 	call	0x126	; 0x126 <main>
+  bc:	0c 94 95 00 	jmp	0x12a	; 0x12a <_exit>
 
 000000c0 <__bad_interrupt>:
   c0:	0c 94 00 00 	jmp	0	; 0x0 <__vectors>
 
-000000c4 <__vector_2>:
-  c4:	1f 92       	push	r1
-  c6:	0f 92       	push	r0
-  c8:	0f b6       	in	r0, 0x3f	; 63
-  ca:	0f 92       	push	r0
-  cc:	11 24       	eor	r1, r1
-  ce:	8f 93       	push	r24
-  d0:	80 e3       	ldi	r24, 0x30	; 48
-  d2:	81 bb       	out	0x11, r24	; 17
-  d4:	82 e3       	ldi	r24, 0x32	; 50
-  d6:	81 bb       	out	0x11, r24	; 17
-  d8:	81 e3       	ldi	r24, 0x31	; 49
-  da:	81 bb       	out	0x11, r24	; 17
-  dc:	8f 91       	pop	r24
-  de:	0f 90       	pop	r0
-  e0:	0f be       	out	0x3f, r0	; 63
-  e2:	0f 90       	pop	r0
-  e4:	1f 90       	pop	r1
-  e6:	18 95       	reti
+000000c4 <__vector_1>:
+#include "32u4.h"
 
-000000e8 <init>:
-  e8:	83 e3       	ldi	r24, 0x33	; 51
-  ea:	80 bb       	out	0x10, r24	; 16
-  ec:	81 b3       	in	r24, 0x11	; 17
-  ee:	81 63       	ori	r24, 0x31	; 49
-  f0:	81 bb       	out	0x11, r24	; 17
-  f2:	17 b8       	out	0x07, r1	; 7
-  f4:	f8 94       	cli
-  f6:	e9 e6       	ldi	r30, 0x69	; 105
-  f8:	f0 e0       	ldi	r31, 0x00	; 0
-  fa:	80 81       	ld	r24, Z
-  fc:	8b 60       	ori	r24, 0x0B	; 11
-  fe:	80 83       	st	Z, r24
- 100:	8d b3       	in	r24, 0x1d	; 29
- 102:	83 60       	ori	r24, 0x03	; 3
- 104:	8d bb       	out	0x1d, r24	; 29
- 106:	78 94       	sei
- 108:	22 e1       	ldi	r18, 0x12	; 18
- 10a:	33 e3       	ldi	r19, 0x33	; 51
- 10c:	40 e0       	ldi	r20, 0x00	; 0
- 10e:	50 e0       	ldi	r21, 0x00	; 0
- 110:	00 00       	nop
- 112:	fe cf       	rjmp	.-4      	; 0x110 <init+0x28>
+.global INT0_vect
 
-00000114 <main>:
- 114:	0e 94 74 00 	call	0xe8	; 0xe8 <init>
+INT0_vect:
+	in 	SREG_SAVE, 0x3f    	 	; getting SREG, wont need this if we do the hardware fix
+  c4:	5f b7       	in	r21, 0x3f	; 63
+	in	RESERVED, 0x06		 	; PINC, start of if statement
+  c6:	46 b1       	in	r20, 0x06	; 6
+	cpi	RESERVED, 0x80			; PINC == B10000000
+  c8:	40 38       	cpi	r20, 0x80	; 128
+	brne	.+4
+  ca:	11 f4       	brne	.+4      	; 0xd0 <__vector_1+0xc>
+	out	0x11, PRESENT_DATA		; must beat IOR here
+  cc:	21 bb       	out	0x11, r18	; 17
+	nop
+  ce:	00 00       	nop
+	out 	0x11, BUFFER_DISABLE		; this may be too fast actually, insert nops between outs if so
+  d0:	31 bb       	out	0x11, r19	; 17
+	out 	0x3f, SREG_SAVE			; restore SREG
+  d2:	5f bf       	out	0x3f, r21	; 63
+	reti
+  d4:	18 95       	reti
 
-00000118 <_exit>:
- 118:	f8 94       	cli
+000000d6 <__vector_2>:
+#define IRQ_HIGH_DISABLE 0B00110001
+#define IOCHRDY 0B00010000
 
-0000011a <__stop_program>:
- 11a:	ff cf       	rjmp	.-2      	; 0x11a <__stop_program>
+extern void BALE_HANDLER_vect(void);
+
+ISR(INT1_vect){//HF
+  d6:	1f 92       	push	r1
+  d8:	0f 92       	push	r0
+  da:	0f b6       	in	r0, 0x3f	; 63
+  dc:	0f 92       	push	r0
+  de:	11 24       	eor	r1, r1
+  e0:	8f 93       	push	r24
+	PORTF = IRQ_LOW_ENABLE;  //Pulling IRQ low and opening buffer because tomcat holds irqs high by default even though they're active high
+  e2:	80 e3       	ldi	r24, 0x30	; 48
+  e4:	81 bb       	out	0x11, r24	; 17
+	PORTF = IRQ_HIGH_ENABLE;
+  e6:	82 e3       	ldi	r24, 0x32	; 50
+  e8:	81 bb       	out	0x11, r24	; 17
+	PORTF = IRQ_HIGH_DISABLE; // we have to leave the irq high because it's high by default and if we lower it it will go high when the buffer is tristated, causing a false interrupt
+  ea:	81 e3       	ldi	r24, 0x31	; 49
+  ec:	81 bb       	out	0x11, r24	; 17
+}
+  ee:	8f 91       	pop	r24
+  f0:	0f 90       	pop	r0
+  f2:	0f be       	out	0x3f, r0	; 63
+  f4:	0f 90       	pop	r0
+  f6:	1f 90       	pop	r1
+  f8:	18 95       	reti
+
+000000fa <init>:
+
+
+void init(){
+
+	int i;
+	DDRF = IRQ_OUT | OUTPUT_ENABLE | FIFO_READ_ENABLE | IOCHRDY;  //set pins to output mode
+  fa:	83 e3       	ldi	r24, 0x33	; 51
+  fc:	80 bb       	out	0x10, r24	; 16
+	PORTF = PORTF | FIFO_READ_ENABLE | IOCHRDY | OUTPUT_ENABLE; // setting read_enable high initially; this is a requirement so that the FIFO can be reset correctly by atmega2560
+  fe:	81 b3       	in	r24, 0x11	; 17
+ 100:	81 63       	ori	r24, 0x31	; 49
+ 102:	81 bb       	out	0x11, r24	; 17
+	DDRC = 0B00000000; // all inputs, only using 6 and 7
+ 104:	17 b8       	out	0x07, r1	; 7
+	
+	cli(); // used to disable interrupts
+ 106:	f8 94       	cli
+	EICRA = EICRA | 0B00001011; // Set INT0 (BALE) as rising edge and INT1 (HF) as falling edge
+ 108:	e9 e6       	ldi	r30, 0x69	; 105
+ 10a:	f0 e0       	ldi	r31, 0x00	; 0
+ 10c:	80 81       	ld	r24, Z
+ 10e:	8b 60       	ori	r24, 0x0B	; 11
+ 110:	80 83       	st	Z, r24
+	EIMSK = EIMSK | 0B00000011; // enable INT0 AND INT1
+ 112:	8d b3       	in	r24, 0x1d	; 29
+ 114:	83 60       	ori	r24, 0x03	; 3
+ 116:	8d bb       	out	0x1d, r24	; 29
+	sei();
+ 118:	78 94       	sei
+	
+	PRESENT_DATA = 0B00010010; // Buffer enabled, fifo_read enabled, isa off (high), iochrdy high (going for ready timing)
+ 11a:	22 e1       	ldi	r18, 0x12	; 18
+	BUFFER_DISABLE = 0B00110011; // buffer disabled, fifo_read disabled
+ 11c:	33 e3       	ldi	r19, 0x33	; 51
+	RESERVED = 0B00000000;
+ 11e:	40 e0       	ldi	r20, 0x00	; 0
+	SREG_SAVE = 0B00000000;
+ 120:	50 e0       	ldi	r21, 0x00	; 0
+
+
+	// delay 2 minutes
+	for(i = 0; i < 1600000000; i++){
+		asm("nop");
+ 122:	00 00       	nop
+ 124:	fe cf       	rjmp	.-4      	; 0x122 <init+0x28>
+
+00000126 <main>:
+
+}
+
+int main(){
+
+	init();
+ 126:	0e 94 7d 00 	call	0xfa	; 0xfa <init>
+
+0000012a <_exit>:
+ 12a:	f8 94       	cli
+
+0000012c <__stop_program>:
+ 12c:	ff cf       	rjmp	.-2      	; 0x12c <__stop_program>

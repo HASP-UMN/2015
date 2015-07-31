@@ -32,7 +32,7 @@
 #define H3 36344967696
 #define H4 4841987667533046032
 unsigned int checksum = 0;
-byte startByte = 0xF;
+byte startByte = 0xF0;
 
 // Time Data definitions
 unsigned int ticStamp  = 0; // used for passing current  sec to data stream.
@@ -167,8 +167,8 @@ void setup() {
 
   // Start RTC and send System Start Time to FIFO
   Wire.begin(DS3231);   // Initializes RTC 
-  byte init_time1 = 0;
-  byte init_time2 = 0;
+  unsigned int init_time1 = 0;
+  unsigned int init_time2 = 0;
   unsigned long start_time = 0;
   unsigned long start_usec_offset = 0;
   bool sec_change = false;
@@ -204,7 +204,7 @@ void setup() {
     unsigned int Minutes = Wire.read();
     byte Hours           = Wire.read();
     start_time =  Minutes<<8 | init_time2;
-    send_data(0xFF, Hours, start_time, start_usec_offset, 0xFFFFFFFF, 0xFFFF, 0xFFFF);
+    send_data(0x00, Hours, start_time, start_usec_offset, 0xFFFF, 0xFFFF, 0xFFFF);
 
     // Debugging print statements below.
     Serial.print("TIMEPACKET,         "); Serial.print(Hours,BIN); Serial.print(start_time,BIN); Serial.print(", "); Serial.println(start_usec_offset,BIN);
@@ -353,7 +353,7 @@ ADC_data get_data(ADC_data data) {
 void send_data(byte startByte, byte channel, unsigned int ticStamp, 
                unsigned long uSecStamp, uint16_t peak, uint16_t tempRaw, uint16_t checksum){
 
-    PORTF = (startByte<<4 & channel);               //1rst byte        
+    PORTF = (startByte | channel);               //1rst byte        
     PORTH = PORTH & ~FIFO_WR; 
     PORTH = PORTH |  FIFO_WR; 
   
