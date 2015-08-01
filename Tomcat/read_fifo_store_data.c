@@ -6,13 +6,14 @@
 //#include <resource.h>
 
 #include "globaldefs.h"
-#include "errorword.h"
+#include "errorpipe.h"
 
 int read_fifo_store_data(int fifo_fd, int storage_fd, unsigned char* buf, size_t length);
 
 int main(int argc, char** argv)
 {
-    reportErrorPipe(ERR_TEST);
+    init_ErrorPipe();
+    reportError(ERR_TEST);
 
 	int fifo_fd, storage_fd;
 	fifo_fd = open("/dev/FIFO_DEV", O_RDONLY);
@@ -23,7 +24,7 @@ int main(int argc, char** argv)
 	}
 	fprintf(stderr, "photon_data.txt opened: fd = %d\n", storage_fd);
 
-	unsigned char photon_data[BUFMAX*4];
+	unsigned char photon_data[BUFMAX];
 	if ( setpriority(0, 0, 0) < 0 )
 	{
 		fprintf(stderr, "Failed to set child process' priority to 0\n");
@@ -45,21 +46,18 @@ int main(int argc, char** argv)
 
 int read_fifo_store_data(int fifo_fd, int storage_fd, unsigned char* buf, size_t length)
 {
-	int count = 0;
 	fprintf(stderr, "Child process %i has entered read_fifo_store_data\n", getpid() );
 
 	int bytes_read;
-	while(count < 10){
+	while(1){
 		if ( (bytes_read = read(fifo_fd, buf, length)) != length) //reading from fifo_device
-        {
-            fprintf(stderr, "Error: couldn't read from fifo_dev correctly; bytes_read = %d\n", bytes_read);
-        }
-//		fprintf(stderr, "returned from read \n");
+        	{
+            		fprintf(stderr, "Error: couldn't read from fifo_dev correctly; bytes_read = %d\n", bytes_read);
+        	}
+
         // now store the data in buf to a file
-		buf[BUFMAX] = '\n';
         write(storage_fd, buf, bytes_read+1);
-		fprintf(stderr, "Child read from fifo. \n");
-		count++;
+	fprintf(stderr, "Child read from fifo. \n");
     }
 	close(storage_fd);
 	close(fifo_fd);

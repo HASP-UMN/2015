@@ -10,7 +10,9 @@
 #define PI2                     6.28318530717958                ///< pi*2 */
 #define half_pi                 1.57079632679490                ///< pi/2 */
 
-#define BUFMAX 500
+#define BUFMAX 504
+
+#define ERROR_FIFO "ErrorPipe.fifo"
 
 #ifndef TRUE
 #define TRUE 1
@@ -33,11 +35,7 @@ struct gps
     FILE* GPSDataFile;              // GPS file to write data to
 
     // RECEIVER CHARACTERISTICS
-    //int readCalls;                  // Number of times read_gps has been called
-    //int badDataCounter;             // Number of bad read from read_gps (rests after 5)
-    //int posValFlag;                 // Flag signifying valid XYZ position from receiver
     bool lastPosVal;                // Last position valid
-    //char responseBuffer[512];       // Character buffer for response data
 
     // GPS TIME (TELEMETRY PACKET BYTES 1-2)
     uint8_t timeStatus;             // Time status
@@ -46,15 +44,12 @@ struct gps
 
     // GPS ECEF X (TELEMETRY PACKET BYTES 3-9)
     double Xe;                      // X position (ECEF) [m]
-    //float  P_Xe;                    // X std dev [m]                      // Is this used?????
 
     // GPS ECEF Y (TELEMETRY PACKET BYTES 10-18)
     double Ye;                      // Y position (ECEF) [m]
-    //float  P_Ye;                    // Y std dev [m]                      // Is this used?????
 
     // GPS ECEF Z (TELEMETRY PACKET BYTES 19-27)
     double Ze;                      // Z position (ECEF) [m]
-    //float  P_Ze;                    // Z std dev [m]                      // Is this used?????
 };
 
 
@@ -92,6 +87,56 @@ struct imu
 
 // ERROR WORD (TELEMETRY PACKET BYTES 79-81)
 unsigned short ERROR_WORD;
+
+
+
+
+/*
+    Enumeration of errors that can be recorded in HASP.
+    The errors are listed in decreasing priority. The
+    specification for the errors is on the 2015 HASP
+    Google Drive in the Telemetry folder.
+*/
+typedef enum ERRWD {
+    ERR_NO_ERROR,
+    ERR_TEST,
+    ERR_GPS_PORTOPEN,
+    ERR_GPS_PORTGATT,
+    ERR_GPS_PORTOBR,
+    ERR_GPS_PORTIBR,
+    ERR_GPS_PORTSATT,
+    ERR_IMU_PORTOPEN,
+    ERR_IMU_WRITEFO,
+    ERR_GPS_READ,
+    ERR_GPS_READSYNC,
+    ERR_GPS_READBYTES,
+    ERR_GPS_READPACK,
+    ERR_GPS_READCHECK,
+    ERR_GPS_WRITEFO,
+    ERR_GPS_WRITE,
+    ERR_GPS_RSMEFR,
+    ERR_GPS_RSMTEMP,
+    ERR_GPS_RSMVOLT,
+    ERR_GPS_RSMANT,
+    ERR_GPS_RSMCPU,
+    ERR_GPS_RSMCOM,
+    ERR_GPS_RSMAGC,
+    ERR_GPS_RSMALM,
+    ERR_GPS_RSMPOS,
+    ERR_GPS_RSMCLO,
+    ERR_GPS_RSMSRW,
+    ERR_IMU_READ,
+    ERR_IMU_READBYTES,
+    ERR_IMU_READCHECK,
+    ERR_IMU_WRITE,
+    ERR_ER_RMFIFO,
+    ERR_ER_MKFIFO,
+    ERR_ER_OPIPE,
+    ERR_ER_RDPIPE,
+    ERR_ER_PIPEBYTES,
+    ERR_GPS_TIME
+}
+ERRWD;
 
 
 #endif

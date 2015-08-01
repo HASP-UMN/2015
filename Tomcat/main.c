@@ -40,15 +40,9 @@ unsigned long imuStamp,gpsStamp,telStamp,eventStamp;
 int imu_fd;
 
 // buffer for reading from photon data fifo
-#define 		     PHOTON_BUF_MAX 512
-unsigned char        PHOTON_DATA_BUFFER[PHOTON_BUF_MAX];
-#define              BYTES_PER_PHOTON 16
-int                  PHOTONS_AQUIRED = 0;
+#define 	     PHOTON_BUF_MAX 504
+#define              BYTES_PER_PHOTON 12
 
-// ISA BUS INPUT PORT
-const unsigned short INPUT_PORT = 0x800; // base address
-#define SYNC_BYTE 77 //arbitrarily chosen for now
-#define IRQ_NUM 5
 
 //state machine state
 typedef enum state{
@@ -115,9 +109,6 @@ state checkState(state SMSTATE)
 int main()
 {
 
-    // Initialize Error Reporting
-    init_ErrorReporting();
-
     // Initialize IMU
 	init_vn100(&imuData);
 
@@ -126,6 +117,9 @@ int main()
 
     // Initialize Telemetry
     init_telemetry();
+
+    // Initialize Error Reporting
+    init_ErrorReporting();
 
 
 	t_0 = get_timestamp_ms();
@@ -156,6 +150,9 @@ int main()
 		return -1;
 	}
 
+    // Initialize Error Pipe
+    init_ErrorPipe();
+
 
     state SMSTATE = IDLE;
 //	int child_status;
@@ -172,12 +169,5 @@ int main()
 
     // Close IMU Data File
 	fclose(imuData.VN100File);
-
-
-    // need to prob send a kill() to child process and then wait();
-
-//	 kill(childpid, SIGTERM);
-//    fprintf(stderr, "Sent SIGTERM signal to child process %i : Now waiting for it\n", childpid);
-//   waitpid(childpid, &child_status, WNOHANG);
     return 0;
 }

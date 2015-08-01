@@ -7,8 +7,8 @@ all: read main
 main: main.o VN100.o gps_novatel.o serial.o timing.o errorword.o telemetry.o
 	$(CC) -o main main.o VN100.o gps_novatel.o serial.o timing.o errorword.o telemetry.o
 
-read: read_fifo_store_data.o errorword.o
-	$(CC) -o read_fifo_store_data read_fifo_store_data.o errorword.o
+read: read_fifo_store_data.o errorpipe.o
+	$(CC) -o read_fifo_store_data read_fifo_store_data.o errorpipe.o
 
 main.o: main.c globaldefs.h errorword.h
 	$(CC) -c main.c
@@ -28,14 +28,16 @@ timing.o: timing.c timing.h
 errorword.o: errorword.c errorword.h globaldefs.h
 	$(CC) -c errorword.c
 
+errorpipe.o: errorpipe.c errorpipe.h globaldefs.h
+	$(CC) -c errorpipe.c
+
 telemetry.o: telemetry.c telemetry.h globaldefs.h errorword.h
 	$(CC) -c telemetry.c
 
-read_fifo_store_data.o: read_fifo_store_data.c globaldefs.h errorword.h
+read_fifo_store_data.o: read_fifo_store_data.c globaldefs.h errorpipe.h
 	$(CC) -c read_fifo_store_data.c
 
 clean:
-	$(RM) main
 	rm -rf *.o
 
 cleardata:

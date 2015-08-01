@@ -20,7 +20,7 @@
 
 /*
 
-    All of the errors for HASP are defined in the ERRWD enumeration in errorword.h with the highest
+    All of the errors for HASP are defined in the ERRWD enumeration in globaldefs.h with the highest
     priority errors at the top of the enumeration. When these errors occur in the application, they
     are reported with the reportError(ERRWD) method. The reportError(ERRWD) functions checks to see
     if a higher priority error has already been reported, and if not, it records the current error.
@@ -37,15 +37,49 @@
 */
 
 
-#define ERROR_FIFO "ErrorPipe.fifo"
-#define FIFO_PERM (S_IRUSR | S_IWUSR)
-
-
 unsigned short currentMaskedErrorID = 0;
 unsigned short currentUnmaskedErrorID = 0;
 unsigned short maskedErrors[10] = {0,0,0,0,0,0,0,0,0,0};
 
+int fdErrorPipe;
+
 bool printErrors = true;
+
+
+// Creates a fresh fifo for the named pipe
+void init_ErrorReporting(){
+
+    struct stat fifostat;
+
+    // If named pipe exists already, remove it
+    if(stat(ERROR_FIFO,&fifostat) == 0){
+        if(unlink((ERROR_FIFO)) < 0){
+            reportError(ERR_ER_RMFIFO);
+            return;
+        }
+    }
+
+    // Create named pipe
+    if(mkfifo(ERROR_FIFO, S_IRUSR | S_IWUSR) < 0){
+        reportError(ERR_ER_MKFIFO);
+        return;
+    }
+
+    return;
+}
+
+
+// Opens the named pipe
+void init_ErrorPipe(){
+
+    // Open named pipe
+    fdErrorPipe = open(ERROR_FIFO, O_RDONLY);
+    if(fdErrorPipe < 0){
+        reportError(ERR_ER_OPIPE);
+    }
+
+    return;
+}
 
 
 void advanceErrorMask(unsigned int errorID){
@@ -55,6 +89,7 @@ void advanceErrorMask(unsigned int errorID){
     }
     maskedErrors[0] = errorID;
 }
+
 
 bool checkErrorMask(unsigned int errorID){
     uint8_t idx;
@@ -66,10 +101,12 @@ bool checkErrorMask(unsigned int errorID){
     return false;
 }
 
+
 void clearError(){
     currentMaskedErrorID = 0;
     currentUnmaskedErrorID = 0;
 }
+
 
 void clearErrorMask(){
     uint8_t idx;
@@ -79,6 +116,7 @@ void clearErrorMask(){
 }
 
 
+// For reporting an error
 void reportError(ERRWD errorID){
     if(checkErrorMask(errorID)==false){
         if(errorID < currentUnmaskedErrorID || currentUnmaskedErrorID == 0){
@@ -91,67 +129,44 @@ void reportError(ERRWD errorID){
         }
     }
     if(printErrors==true){
-        fprintf(stderr,"############  HAXDT MAIN ERROR: %d  ############\n",errorID);  // For Debugging
+        fprintf(stderr,"############  HAXDT MAIN ERROR: %X  ############\n",errorID);  // For Debugging
     }
 }
 
 
-void reportErrorPipe(ERRWD errorID){
-    int fd = open(ERROR_FIFO, O_WRONLY);
-    if(fd == -1){
-        return;
-    }
-    write(fd, &errorID, 2);
-    if(printErrors==true){
-        fprintf(stderr,"############  HAXDT PIPE ERROR: %d  ############\n",errorID);  // For Debugging
-    }
-    close(fd);
-    return;
-}
-
-
+// Reads in errors on the named pipe from the fifo process
 void readErrorPipe(){
     size_t bytesToRead;
     unsigned short errorID;
     bool currentPrintErrors = printErrors;
-    fprintf(stderr,"Open fd\n");
-    int fd = open(ERROR_FIFO, O_RDONLY);
-    if(fd == -1){
-        // report error
-        fprintf(stderr,"Open failed\n");
-        return;
-    }
 
     printErrors = false;
 
-    fprintf(stderr,"ioctl\n");
-    if(ioctl(fd, FIONREAD, &bytesToRead) < 0){
-        // report error
-        fprintf(stderr,"ioctl failed\n");
+    if(ioctl(fdErrorPipe, FIONREAD, &bytesToRead) < 0){
+        reportError(ERR_ER_PIPEBYTES);
         return;
     }
-    fprintf(stderr, "Bytes To Read: %d\n", bytesToRead);
 
     while(bytesToRead > 0){
-        if(read(fd, &errorID, 2) < 0){
-            // report error
+        if(read(fdErrorPipe, &errorID, 2) < 0){
+            reportError(ERR_ER_RDPIPE);
             return;
         }
         reportError(errorID);
-        if(ioctl(fd, FIONREAD, &bytesToRead) < 0){
-            //report error
+        if(ioctl(fdErrorPipe, FIONREAD, &bytesToRead) < 0){
+            reportError(ERR_ER_PIPEBYTES);
             return;
         }
     }
-    close(fd);
 
     printErrors = currentPrintErrors;
     return;
 }
 
 
+// Gets Error Word for Telemetry
 void getErrorWord(){
-    // readErrorPipe();
+    readErrorPipe();
     if(currentUnmaskedErrorID!=0){
         ERROR_WORD = currentUnmaskedErrorID;
         advanceErrorMask(currentUnmaskedErrorID);
@@ -170,24 +185,6 @@ void getErrorWord(){
 }
 
 
-void init_ErrorReporting(){
-
-    struct stat fifostat;
-
-    if(stat(ERROR_FIFO,&fifostat) == 0){
-        if(unlink((ERROR_FIFO)) < 0){
-            // report error
-            return;
-        }
-    }
-
-    if(mkfifo(ERROR_FIFO, FIFO_PERM) < 0){
-        // report error
-        return;
-    }
-
-    return;
-}
 
 
 

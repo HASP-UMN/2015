@@ -226,11 +226,10 @@ void read_GPS(struct gps *gpsData_ptr)
 			{
 				time_t unixSeconds = 315964800 + (24*7*3600*gpsData_ptr->weekRef + gpsData_ptr->time/1000);
 				time_t *timeSeconds = &unixSeconds;
-				// fprintf(stderr,"GPS Unix Seconds: %d", timeSeconds);
 				stime(timeSeconds);
 			}
 			else{
-                // report error
+                reportError(ERR_GPS_TIME);
 			}
 
             posValid = !GetBitMask(response,20 + pCount,19);
