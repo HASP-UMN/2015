@@ -21,16 +21,16 @@
 
   // Port masks for Port H
 #define ADC_CS   0B01000000
-#define PK_RST1  0B00100011
-#define PK_RST2  0B00010011
-#define PK_RST3  0B00001011
-#define PK_RST4  0B00000111
+#define PK_RST1  0B00100000
+#define PK_RST2  0B00010000
+#define PK_RST3  0B00001000
+#define PK_RST4  0B00000100
 #define PK_RST_DEASSERT 0B01000011
 
 //register uint8_t ADC_CS_ASSERT asm("r18");
 //register uint8_t ADC_CS_DEASSERT asm("r19");
-#define ADC_CS_ASSERT 0B00000011
-#define ADC_CS_DEASSERT 0B01000011
+//#define ADC_CS_ASSERT 0B00000011
+//#define ADC_CS_DEASSERT 0B01000011
 
 
 #define FIFO_RST 0B00000010
@@ -38,9 +38,6 @@
 #define FIFO_WR_ASSERT 0B01000010   //see PORTH on eagle file: FIFO_WR active low
 #define FIFO_WR_DEASSERT 0B01000011
 
-// Checksum definitions
-#define H3 36344967696
-#define H4 4841987667533046032
 unsigned int checksum = 0;
 byte startByte = 0x00;
 
@@ -50,8 +47,6 @@ unsigned long uSecStamp = 0; // used for passing current usec to data stream.
 
 // FIFO full flag. Pin 88 on the ATmega2560
 volatile bool FIFO_full_flag = false;
-//uint16_t tempRaw = 0; // A/D converter's internal temp sensor
-//uint8_t  channel = 0; // Channel no. [1-4]
 volatile bool newEventCH1 = false; // New event flag for channel 1
 volatile bool newEventCH2 = false; // New event flag for channel 2
 volatile bool newEventCH3 = false; // New event flag for channel 3
@@ -66,11 +61,7 @@ ADC_data data_ch4;
 // FIFO interrupt service routine for the FF signal
 void FIFO_FF_ISR() {
   FIFO_full_flag = true;
-  // The Full Flag (FF) will go LOW, inhibiting further write operation,
-  // when the write pointer is one location less than the read pointer,
-  // indicating that the device is full. If the read pointer is not moved
-  // after Reset (RS), the Full-Flag (FF) will go LOW after 256 writes for
-  // IDT7200, 512 writes for the IDT7201A and 1,024 writes for the IDT7202A.
+
 }
 
 // Ch[1-4] interrupt service routines for threshhold discriminator signals
@@ -117,14 +108,8 @@ void setup() {
   
   // Set up Port H on the ATmega2560 as an output port. DDRH is the direction register for Port H.
   DDRH = DDRH | B01111111;
-  // Initialize the digital outputs. PORTH is the register for the state of the outputs.
   PORTH = B01000011;
-  
-  //ADC_CS_ASSERT = 0B00000011; 
-  Serial.print("CS_ASSERT: "); Serial.println(ADC_CS_ASSERT);
-  //ADC_CS_DEASSERT = 0B01000011; 
-  Serial.print("CS_DEASSERT: "); Serial.println(ADC_CS_DEASSERT);
-  
+    
   // PORT F (digital output)
   // Set up Port F on the ATmega2560 as an output port. DDRF is the direction register for Port F.
   DDRF = DDRF | B11111111;
@@ -178,8 +163,8 @@ void setup() {
   data_ch3.reset = PK_RST3;
   data_ch4.reset = PK_RST4;
 
-  //delay(120000); // Allows TOMCAT to boot and start data collection before sending data.
-  delay(15000);
+  delay(120000); // Allows TOMCAT to boot and start data collection before sending data.
+  //delay(15000);
   // Start RTC and send System Start Time to FIFO
   Wire.begin(DS3231);   // Initializes RTC 
   unsigned int init_time1 = 0;
@@ -440,26 +425,4 @@ byte startByte, byte channel, unsigned int ticStamp, unsigned long uSecStamp, ui
     Serial.print("Raw rtc Time:");
     RTC_PRINT_TIME();
     Serial.println();
-}
-
-
-
-
-unsigned int getChecksum(unsigned int value) {
-    unsigned int h1, h2, h3;
-    unsigned int chksum;
-    
-    h1 = 0; h2 = 0;
-    h1 = (value & 0xF) << 2;
-    h2 = H4 >> h1;
-    h1 = h2 & 0xF;
-    h2 = h1 << 2;
-    h1 = H3 >> h2;
-    h3 = 0; chksum = 0;
-    h3 = (value & 0xF0) >> 2;
-    h2 = H4 >> h3 & 0xF;
-    h3 = h2 << 2;
-
-    chksum = (h1 >> h3) & 0xF;
-    return chksum;
 }
