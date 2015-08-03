@@ -40,8 +40,8 @@ unsigned long imuStamp,gpsStamp,telStamp,eventStamp;
 int imu_fd;
 
 // buffer for reading from photon data fifo
-#define 	     PHOTON_BUF_MAX 504
-#define              BYTES_PER_PHOTON 12
+#define      PHOTON_BUF_MAX 504
+#define      BYTES_PER_PHOTON 12
 
 
 //state machine state
@@ -81,7 +81,7 @@ state checkState(state SMSTATE)
 
         case RD_GPS:
 
-            fprintf(stderr, "\nstate = RD_GPS\n");
+            //fprintf(stderr, "\nstate = RD_GPS\n");
             read_GPS(&gpsData);
             gpsStamp = get_timestamp_ms();
             SMSTATE = IDLE;
@@ -89,7 +89,7 @@ state checkState(state SMSTATE)
 
         case TELEMETRY:
 
-            fprintf(stderr, "\nstate = TELEMETRY\n");
+            //fprintf(stderr, "\nstate = TELEMETRY\n");
             getErrorWord();
             send_telemetry(&imuData,&gpsData,&photonData);
             telStamp = get_timestamp_ms();
@@ -97,7 +97,8 @@ state checkState(state SMSTATE)
             break;
 
         default:
-            fprintf(stderr, "\nstate = default\n");
+                
+            //fprintf(stderr, "\nstate = default\n");
             SMSTATE = IDLE;
             break;
     }
@@ -116,10 +117,10 @@ int main()
 	init_GPS(&gpsData);
 
     // Initialize Telemetry
-    init_telemetry();
+	init_telemetry();
 
     // Initialize Error Reporting
-    init_ErrorReporting();
+	init_ErrorReporting();
 
 
 	t_0 = get_timestamp_ms();
@@ -132,7 +133,6 @@ int main()
     photonData.counts_ch02 = 0;
     photonData.counts_ch03 = 0;
     photonData.counts_ch04 = 0;
-
 
     // next fork a child to call read on the fifo device in while(1)
 
@@ -153,18 +153,11 @@ int main()
     // Initialize Error Pipe
     init_ErrorPipe();
 
-
     state SMSTATE = IDLE;
-//	int child_status;
     while (1)
     {
         t = get_timestamp_ms() - t_0;
         SMSTATE = checkState(SMSTATE);
-/*		if ( waitpid(childpid, &child_status, WNOHANG) == childpid)// just for testing, not flight code
-		{
-			break;
-		}
-*/
     }
 
     // Close IMU Data File
