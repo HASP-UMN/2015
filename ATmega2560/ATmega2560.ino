@@ -163,8 +163,17 @@ void setup() {
   data_ch3.reset = PK_RST3;
   data_ch4.reset = PK_RST4;
 
+
+
+
+
   delay(120000); // Allows TOMCAT to boot and start data collection before sending data.
-  //delay(15000);
+  //delay(5000);
+  
+  
+  
+  
+  
   // Start RTC and send System Start Time to FIFO
   Wire.begin(DS3231);   // Initializes RTC 
   unsigned int init_time1 = 0;
@@ -204,8 +213,11 @@ void setup() {
     unsigned int Minutes = Wire.read();
     byte Hours           = Wire.read();
     start_time =  Minutes<<8 | init_time2;
-//    send_data(0x00, Hours, start_time, start_usec_offset, 0xFFFF, 0xFFFF, 0xFFFF);
-
+    
+    send_start_time(Hours, start_time, start_usec_offset);
+  
+  
+  
     // Debugging print statements below.
     Serial.print("TIMEPACKET,         "); Serial.print(Hours,BIN); Serial.print(start_time,BIN); Serial.print(", "); Serial.println(start_usec_offset,BIN);
     Serial.print("TIMEPACKET DECODED, "); Serial.print(Hours,HEX); Serial.print(start_time,HEX); Serial.print(", "); Serial.println(start_usec_offset,HEX);
@@ -227,7 +239,7 @@ void loop() {
     ticStamp  = ticCount;        // Get current gpsPPS number of seconds since data begin (ticCount).
     
     data_ch1 = get_data(data_ch1);
-    checksum = calculate_checksum(data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw);        
+    checksum = calculate_checksum(data_ch1.send_channel, ticStamp, uSecStamp, data_ch1.peak_val, data_ch1.tempRaw);        
     //send_data(startByte, data_ch1.send_channel, ticStamp, uSecStamp, data_ch1.peak_val, data_ch1.tempRaw, checksum);
     send_data(&data_ch1, checksum);
     
@@ -246,12 +258,12 @@ void loop() {
     ticStamp  = ticCount;        // Get current gpsPPS number of seconds since data begin (ticCount).
     
     data_ch2 = get_data(data_ch2);
-    checksum = calculate_checksum(data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw);
+    checksum = calculate_checksum(data_ch2.send_channel, ticStamp, uSecStamp, data_ch2.peak_val, data_ch2.tempRaw);
     //send_data(startByte, data_ch2.send_channel, ticStamp, uSecStamp, data_ch2.peak_val, data_ch2.tempRaw, checksum);
     send_data(&data_ch2, checksum);
     
     //debugging print statements in function below
-    print_debug(data_ch2, "2", ticStamp, uSecStamp, checksum);
+    //print_debug(data_ch2, "2", ticStamp, uSecStamp, checksum);
     
     // Reset peak value and interrupt flag for CH2
     newEventCH2 = false;
@@ -265,12 +277,12 @@ void loop() {
     ticStamp  = ticCount;        // Get current gpsPPS number of seconds since data begin (ticCount).
     
     data_ch3 = get_data(data_ch3);
-    checksum = calculate_checksum(data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw);
+    checksum = calculate_checksum(data_ch3.send_channel, ticStamp, uSecStamp, data_ch3.peak_val, data_ch3.tempRaw);
 //    send_data(startByte, data_ch3.send_channel, ticStamp, uSecStamp, data_ch3.peak_val, data_ch3.tempRaw, checksum);    
     send_data(&data_ch3, checksum);
     
     //debugging print statements in function below
-    print_debug(data_ch3, "3", ticStamp, uSecStamp, checksum);
+    //print_debug(data_ch3, "3", ticStamp, uSecStamp, checksum);
     
     // Reset peak value and interrupt flag for CH3
     newEventCH3 = false;
@@ -284,7 +296,7 @@ void loop() {
     ticStamp  = ticCount;        // Get current gpsPPS number of seconds since data begin (ticCount).
     
     data_ch4 = get_data(data_ch4);
-    checksum = calculate_checksum(data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw);    
+    checksum = calculate_checksum(data_ch4.send_channel, ticStamp, uSecStamp, data_ch4 .peak_val, data_ch4.tempRaw);    
 //    send_data(startByte, data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw, checksum);
     send_data(&data_ch4, checksum);
     //debugging print statements in function below
@@ -347,11 +359,6 @@ unsigned int calculate_checksum(byte channel, unsigned int ticStamp,
   return checksum;
 }
 
-
-
-//void send_data(byte startByte, byte channel, unsigned int ticStamp, 
-  //             unsigned long uSecStamp, uint16_t peak, uint16_t tempRaw, uint16_t checksum){
-
 void send_data(ADC_data* data, unsigned int checksum){
 
     PORTF = data->send_channel;               //1rst byte        
@@ -400,8 +407,63 @@ void send_data(ADC_data* data, unsigned int checksum){
     
     PORTF = (checksum & 0xFF);                //11th byte    
     PORTH = FIFO_WR_ASSERT; 
-    PORTH = FIFO_WR_DEASSERT;    
+    PORTH = FIFO_WR_DEASSERT;  
+  //Serial.println(checksum, DEC);  
 }
+
+//    send_data(0x00, Hours, start_time, start_usec_offset, 0xFFFF, 0xFFFF, 0xFFFF);
+void send_start_time(byte Hours, unsigned long start_time, unsigned long start_usec_offset ){
+ 
+  PORTF = Hours;
+  PORTH = FIFO_WR_ASSERT; 
+  PORTH = FIFO_WR_DEASSERT;    
+  
+  PORTF = (start_time & 0xFF00) >> 8;
+  PORTH = FIFO_WR_ASSERT; 
+  PORTH = FIFO_WR_DEASSERT;
+  
+  PORTF = (start_time & 0xFF);
+  PORTH = FIFO_WR_ASSERT; 
+  PORTH = FIFO_WR_DEASSERT;
+  
+  PORTF = (start_usec_offset & 0xFF0000) >> 16;
+  PORTH = FIFO_WR_ASSERT; 
+  PORTH = FIFO_WR_DEASSERT;
+
+  PORTF = (start_usec_offset & 0xFF00) >> 8;
+  PORTH = FIFO_WR_ASSERT; 
+  PORTH = FIFO_WR_DEASSERT;
+
+  PORTF = (start_usec_offset && 0xFF);
+  PORTH = FIFO_WR_ASSERT; 
+  PORTH = FIFO_WR_DEASSERT;
+
+  PORTF = 0xFF;
+  PORTH = FIFO_WR_ASSERT; 
+  PORTH = FIFO_WR_DEASSERT;
+
+  PORTF = 0xFF;
+  PORTH = FIFO_WR_ASSERT; 
+  PORTH = FIFO_WR_DEASSERT;
+
+  PORTF = 0xFF;
+  PORTH = FIFO_WR_ASSERT; 
+  PORTH = FIFO_WR_DEASSERT;  
+
+  PORTF = 0xFF;
+  PORTH = FIFO_WR_ASSERT; 
+  PORTH = FIFO_WR_DEASSERT;
+
+  PORTF = 0xFF;
+  PORTH = FIFO_WR_ASSERT; 
+  PORTH = FIFO_WR_DEASSERT;
+
+  PORTF = 0xFF;
+  PORTH = FIFO_WR_ASSERT; 
+  PORTH = FIFO_WR_DEASSERT;    
+}
+
+
 
 void print_debug(ADC_data data, char* channel_char, unsigned long ticStamp, unsigned long uSecStamp, uint16_t checksum) {
   
