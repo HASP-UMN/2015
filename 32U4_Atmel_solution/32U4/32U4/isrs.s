@@ -9,10 +9,10 @@ INT0_vect:
 	cpi	RESERVED, 0x80			; PINC == B10000000
 	brne	.+10
 	out		0x11, PRESENT_DATA		; must beat IOR here
+    ldi     FLAG, 0x00              ; alert main that IRQ was accepted/handled by tomcat, also acts as nop
 	nop
 	nop
-	nop
-	out 	0x11, BUFFER_DISABLE		; this may be too fast actually, insert nops between outs if so
+	out 	0x11, BUFFER_DISABLE    ; this may be too fast actually, insert nops between outs if so
 	out 	0x3f, SREG_SAVE			; restore SREG
 	reti
 

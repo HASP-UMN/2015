@@ -10,6 +10,7 @@
 #  define RESERVED					r20
 #  define SREG_SAVE	                r21
 #  define IOCHRDY_HIGH				r22
+#  define FLAG                      r23
 #else  /* !ASSEMBLER */
 
 #include <stdint.h>
@@ -19,5 +20,5 @@ register uint8_t BUFFER_DISABLE asm("r19");  //IOCHRDY high, read_enable high, o
 register uint8_t RESERVED asm("r20"); // reserving this register now for use in ISR: eliminates push(r24): if we dont have if statement this isn't necessary;
 register uint8_t SREG_SAVE asm("r21"); // reserving this register for storing sreg : eliminates 2 pushes;
 register uint8_t IOCHRDY_HIGH asm("r22");
-
+register uint8_t flag asm("r24");         // same
 #endif /* ASSEMBLER */

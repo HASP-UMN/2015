@@ -50,6 +50,11 @@ static struct file_operations fifo_fops = {
     .release = fifo_close,
 };
 
+
+
+
+
+
 /* Module Initialization */
 static int __init fifo_init(void)
 {
