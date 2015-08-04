@@ -32,7 +32,6 @@
 //#define ADC_CS_ASSERT 0B00000011
 //#define ADC_CS_DEASSERT 0B01000011
 
-
 #define FIFO_RST 0B00000010
 #define FIFO_WR  0B00000001
 #define FIFO_WR_ASSERT 0B01000010   //see PORTH on eagle file: FIFO_WR active low
@@ -61,7 +60,6 @@ ADC_data data_ch4;
 // FIFO interrupt service routine for the FF signal
 void FIFO_FF_ISR() {
   FIFO_full_flag = true;
-
 }
 
 // Ch[1-4] interrupt service routines for threshhold discriminator signals
@@ -85,12 +83,11 @@ ISR(INT4_vect) {
     newEventCH4 = true;
   // Ignore new events if another event (on any channel) is currently being processed
 }
-
 // Interrupt Service Routines for GPS_PPS
 ISR(INT3_vect) {
   uSecOffset = micros(); 
   ticCount++;
-  }  
+}  
 
 void setup() {  
   // Initialize and configure SPI bus for A/D communications
@@ -168,7 +165,6 @@ void setup() {
 
 
   delay(120000); // Allows TOMCAT to boot and start data collection before sending data.
-  //delay(5000);
   
   
   
@@ -215,15 +211,13 @@ void setup() {
     start_time =  Minutes<<8 | init_time2;
     
     
-    
+    // Sends initialization and time zero packet to the TOMCAT;    
     send_start_time(Hours, start_time, start_usec_offset);
   
-  
-  
-    // Debugging print statements below.
-    Serial.print("TIMEPACKET,         "); Serial.print(Hours,BIN); Serial.print(start_time,BIN); Serial.print(", "); Serial.println(start_usec_offset,BIN);
-    Serial.print("TIMEPACKET DECODED, "); Serial.print(Hours,HEX); Serial.print(start_time,HEX); Serial.print(", "); Serial.println(start_usec_offset,HEX);
-    Serial.print("TIMEPACKET DECODED, "); Serial.print(Hours,DEC); Serial.print(start_time,DEC); Serial.print(", "); Serial.println(start_usec_offset,DEC);
+//    // Debugging print statements below.
+//    Serial.print("TIMEPACKET,         "); Serial.print(Hours,BIN); Serial.print(start_time,BIN); Serial.print(", "); Serial.println(start_usec_offset,BIN);
+//    Serial.print("TIMEPACKET DECODED, "); Serial.print(Hours,HEX); Serial.print(start_time,HEX); Serial.print(", "); Serial.println(start_usec_offset,HEX);
+//    Serial.print("TIMEPACKET DECODED, "); Serial.print(Hours,DEC); Serial.print(start_time,DEC); Serial.print(", "); Serial.println(start_usec_offset,DEC);
 
 } // end SETUP
 
@@ -367,11 +361,11 @@ void send_data(ADC_data* data, unsigned int checksum){
     PORTH = FIFO_WR_ASSERT; 
     PORTH = FIFO_WR_DEASSERT; 
 
-    PORTF = (ticStamp  & 0xFF00)>>8;         //3rd byte        
+    PORTF = (ticStamp  & 0xFF00)>>8;          //3rd byte        
     PORTH = FIFO_WR_ASSERT; 
     PORTH = FIFO_WR_DEASSERT;
   
-    PORTF = (ticStamp  & 0xFF);              //2nd byte        
+    PORTF = (ticStamp  & 0xFF);               //2nd byte        
     PORTH = FIFO_WR_ASSERT; 
     PORTH = FIFO_WR_DEASSERT;
 
@@ -387,19 +381,19 @@ void send_data(ADC_data* data, unsigned int checksum){
     PORTH = FIFO_WR_ASSERT; 
     PORTH = FIFO_WR_DEASSERT; 
 
-    PORTF = (data->peak_val & 0xFF00)>>8;               //8th byte        
+    PORTF = (data->peak_val & 0xFF00)>>8;     //8th byte        
     PORTH = FIFO_WR_ASSERT; 
     PORTH = FIFO_WR_DEASSERT;
     
-    PORTF = (data->peak_val & 0xFF);                    //7th byte    
+    PORTF = (data->peak_val & 0xFF);          //7th byte    
     PORTH = FIFO_WR_ASSERT; 
     PORTH = FIFO_WR_DEASSERT;    
 
-    PORTF = (data->tempRaw & 0xFF00)>>8;            //10th byte    
+    PORTF = (data->tempRaw & 0xFF00)>>8;      //10th byte    
     PORTH = FIFO_WR_ASSERT; 
     PORTH = FIFO_WR_DEASSERT;
     
-    PORTF = (data->tempRaw & 0xFF);                 //9th byte    
+    PORTF = (data->tempRaw & 0xFF);           //9th byte    
     PORTH = FIFO_WR_ASSERT; 
     PORTH = FIFO_WR_DEASSERT;
 
@@ -410,10 +404,8 @@ void send_data(ADC_data* data, unsigned int checksum){
     PORTF = (checksum & 0xFF);                //11th byte    
     PORTH = FIFO_WR_ASSERT; 
     PORTH = FIFO_WR_DEASSERT;  
-  //Serial.println(checksum, DEC);  
 }
 
-//    send_data(0x00, Hours, start_time, start_usec_offset, 0xFFFF, 0xFFFF, 0xFFFF);
 void send_start_time(byte Hours, unsigned long start_time, unsigned long start_usec_offset ){
  
   PORTF = Hours;
@@ -473,20 +465,12 @@ void print_debug(ADC_data data, char* channel_char, unsigned long ticStamp, unsi
     uint16_t peak_val = data.peak_val;
     uint16_t tempRaw = data.tempRaw;
 
-/*
-byte startByte, byte channel, unsigned int ticStamp, unsigned long uSecStamp, uint16_t peak, uint16_t tempRaw, uint16_t checksum
- */
-
-
     Serial.print("FF");Serial.print(channel_char); Serial.print(", ");
-    Serial.print(ticStamp,HEX); Serial.print(" ");
-    Serial.print(uSecStamp,HEX); Serial.print(" ");
+    Serial.print(ticStamp,HEX); Serial.print(".");
+    Serial.print(uSecStamp,HEX); Serial.print(", ");
     Serial.print(peak_val,HEX); Serial.print(", ");
     Serial.print(tempRaw,HEX); Serial.print(", ");
-    Serial.print(checksum,HEX); Serial.print(",");
-    
-    
-    Serial.print("Raw rtc Time:");
+    Serial.print(checksum,HEX); Serial.print(", ");
     RTC_PRINT_TIME();
     Serial.println();
 }
