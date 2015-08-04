@@ -361,11 +361,11 @@ void send_data(ADC_data* data, unsigned int checksum){
     PORTH = FIFO_WR_ASSERT; 
     PORTH = FIFO_WR_DEASSERT; 
 
-    PORTF = (ticStamp  & 0xFF00)>>8;         //3rd byte        
+    PORTF = (ticStamp  & 0xFF00)>>8;          //3rd byte        
     PORTH = FIFO_WR_ASSERT; 
     PORTH = FIFO_WR_DEASSERT;
   
-    PORTF = (ticStamp  & 0xFF);              //2nd byte        
+    PORTF = (ticStamp  & 0xFF);               //2nd byte        
     PORTH = FIFO_WR_ASSERT; 
     PORTH = FIFO_WR_DEASSERT;
 
@@ -381,19 +381,19 @@ void send_data(ADC_data* data, unsigned int checksum){
     PORTH = FIFO_WR_ASSERT; 
     PORTH = FIFO_WR_DEASSERT; 
 
-    PORTF = (data->peak_val & 0xFF00)>>8;               //8th byte        
+    PORTF = (data->peak_val & 0xFF00)>>8;     //8th byte        
     PORTH = FIFO_WR_ASSERT; 
     PORTH = FIFO_WR_DEASSERT;
     
-    PORTF = (data->peak_val & 0xFF);                    //7th byte    
+    PORTF = (data->peak_val & 0xFF);          //7th byte    
     PORTH = FIFO_WR_ASSERT; 
     PORTH = FIFO_WR_DEASSERT;    
 
-    PORTF = (data->tempRaw & 0xFF00)>>8;            //10th byte    
+    PORTF = (data->tempRaw & 0xFF00)>>8;      //10th byte    
     PORTH = FIFO_WR_ASSERT; 
     PORTH = FIFO_WR_DEASSERT;
     
-    PORTF = (data->tempRaw & 0xFF);                 //9th byte    
+    PORTF = (data->tempRaw & 0xFF);           //9th byte    
     PORTH = FIFO_WR_ASSERT; 
     PORTH = FIFO_WR_DEASSERT;
 
@@ -404,10 +404,8 @@ void send_data(ADC_data* data, unsigned int checksum){
     PORTF = (checksum & 0xFF);                //11th byte    
     PORTH = FIFO_WR_ASSERT; 
     PORTH = FIFO_WR_DEASSERT;  
-  //Serial.println(checksum, DEC);  
 }
 
-//    send_data(0x00, Hours, start_time, start_usec_offset, 0xFFFF, 0xFFFF, 0xFFFF);
 void send_start_time(byte Hours, unsigned long start_time, unsigned long start_usec_offset ){
  
   PORTF = Hours;
