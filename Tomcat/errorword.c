@@ -147,7 +147,7 @@ void readErrorPipe(){
         return;
     }
 
-    while(bytesToRead > 0){
+    while(bytesToRead > 1){
         if(read(fdErrorPipe, &errorID, 2) < 0){
             reportError(ERR_ER_RDPIPE);
             return;

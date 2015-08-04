@@ -1,5 +1,5 @@
 // ***** HASP UNIVERISTY OF MINNESOTA 2015 *****
-// errorpipe.c
+// telepipe.c
 
 #include <stdlib.h>      // Standard C Library
 #include <stdio.h>       // Standard I/O Library
@@ -11,28 +11,28 @@
 #include <unistd.h>      // Named Pipes
 
 #include "globaldefs.h"
-#include "errorpipe.h"
+#include "telepipe.h"
 
 
-int fdErrorPipe;
+int fdTelemetryPipe;
 
 
-void reportError(ERRWD errorID){
-    if(fdErrorPipe > -1){
-        write(fdErrorPipe, &errorID, 2);
+void recordChannel(unsigned char channel){
+    if(fdTelemetryPipe > -1){
+        write(fdTelemetryPipe, &channel, 2);
     }
     else{
-        fprintf(stderr,"############  ERROR PIPE NOT OPEN  #############\n",errorID);  // For Debugging
+        fprintf(stderr,"############  TELEMETRY PIPE NOT OPEN  #############\n");  // For Debugging
     }
-    fprintf(stderr,"############  HAXDT PIPE ERROR: %X  ############\n",errorID);  // For Debugging
     return;
 }
 
 
-void init_ErrorPipe(){
-    fdErrorPipe = open(ERROR_FIFO, O_WRONLY);
+void init_telemetryPipe(){
+    fdTelemetryPipe = open(TELEMETRY_FIFO, O_WRONLY);
     return;
 }
+
 
 
 

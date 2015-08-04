@@ -13,6 +13,7 @@
 #define BUFMAX 504
 
 #define ERROR_FIFO "ErrorPipe.fifo"
+#define TELEMETRY_FIFO "TelemetryPipe.fifo"
 
 #ifndef TRUE
 #define TRUE 1
@@ -100,6 +101,9 @@ unsigned short ERROR_WORD;
 typedef enum ERRWD {
     ERR_NO_ERROR,
     ERR_TEST,
+    ERR_DET_CHKALL,
+    ERR_DET_CHKHALF,
+    ERR_DET_CHK,
     ERR_GPS_PORTOPEN,
     ERR_GPS_PORTGATT,
     ERR_GPS_PORTOBR,
@@ -134,7 +138,12 @@ typedef enum ERRWD {
     ERR_ER_OPIPE,
     ERR_ER_RDPIPE,
     ERR_ER_PIPEBYTES,
-    ERR_GPS_TIME
+    ERR_GPS_TIME,
+    ERR_TEL_RMFIFO,
+    ERR_TEL_MKFIFO,
+    ERR_TEL_OPIPE,
+    ERR_TEL_RDPIPE,
+    ERR_TEL_PIPEBYTES,
 }
 ERRWD;
 

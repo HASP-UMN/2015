@@ -14,6 +14,8 @@
 #include <fcntl.h>       // File descriptor control
 #include <unistd.h>      // Symbolic constants and types
 #include <sys/types.h>   // C data types
+#include <sys/stat.h>    // Named Pipes
+#include <sys/ioctl.h>   // I/O
 
 #include "globaldefs.h"
 #include "errorword.h"
@@ -21,6 +23,7 @@
 #define TELE_PACKET_SIZE  83
 #define TELE_COM_PORT     "/dev/ttyS1"
 static int TELEMETRY_PORT;
+int fdTelemetryPipe;
 
 void reset_string(char *string) {
     int string_size = strlen(string);
@@ -58,6 +61,77 @@ void init_telemetry() {
     tcsetattr(fd, TCSANOW, &tty);
     TELEMETRY_PORT = fd;
 
+
+    // OPEN PIPE FOR CHANNEL COUNTS
+    struct stat fifostat;
+
+    // If named pipe exists already, remove it
+    if(stat(TELEMETRY_FIFO,&fifostat) == 0){
+        if(unlink((TELEMETRY_FIFO)) < 0){
+            reportError(ERR_TEL_RMFIFO);
+            return;
+        }
+    }
+
+    // Create named pipe
+    if(mkfifo(TELEMETRY_FIFO, S_IRUSR | S_IWUSR) < 0){
+        reportError(ERR_TEL_MKFIFO);
+        return;
+    }
+
+    return;
+
+}
+
+void init_telemetryPipe(){
+
+    // Open named pipe
+    fdTelemetryPipe = open(TELEMETRY_FIFO, O_RDONLY);
+    if(fdTelemetryPipe < 0){
+        reportError(ERR_TEL_OPIPE);
+    }
+
+    return;
+}
+
+void get_channel_counts(struct photons *photonData){
+    size_t bytesToRead;
+    unsigned char channel;
+
+    photonData->counts_ch01 = 0;
+    photonData->counts_ch02 = 0;
+    photonData->counts_ch03 = 0;
+    photonData->counts_ch04 = 0;
+
+    if(ioctl(fdTelemetryPipe, FIONREAD, &bytesToRead) < 0){
+        reportError(ERR_TEL_PIPEBYTES);
+        return;
+    }
+
+    while(bytesToRead > 0){
+        if(read(fdTelemetryPipe, &channel, 1) < 0){
+            reportError(ERR_TEL_RDPIPE);
+            return;
+        }
+
+        switch(channel){
+        case 1:
+            photonData->counts_ch01 = photonData->counts_ch01 + 1;
+        case 2:
+            photonData->counts_ch02 = photonData->counts_ch02 + 1;
+        case 3:
+            photonData->counts_ch03 = photonData->counts_ch03 + 1;
+        case 4:
+            photonData->counts_ch04 = photonData->counts_ch04 + 1;
+        }
+
+        if(ioctl(fdTelemetryPipe, FIONREAD, &bytesToRead) < 0){
+            reportError(ERR_TEL_PIPEBYTES);
+            return;
+        }
+    }
+
+    return;
 }
 
 // Send the telemetry packet. See the final 2015 PSIP for telemetry specification.
@@ -66,6 +140,7 @@ void send_telemetry(struct imu *imuData, struct gps *gpsData, struct photons *ph
     static char sendpacket[TELE_PACKET_SIZE];
     char * string_to_write = malloc(9*sizeof(char));
     reset_string(string_to_write);
+    get_channel_counts(photonData);
 
     // HEADER (BYTES 1-2)
     sprintf(string_to_write,"M,");
