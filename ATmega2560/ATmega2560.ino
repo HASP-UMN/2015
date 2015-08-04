@@ -98,8 +98,8 @@ void setup() {
   
   // Open serial port
   Serial.begin(115200); Serial.flush();
-  Serial.println("Channel, PeakVal, TempRaw, Seconds, uSeconds, rtcTime");
-  Serial.println("=====================================================");
+  //Serial.println("Channel, PeakVal, TempRaw, Seconds, uSeconds, rtcTime");
+  //Serial.println("=====================================================");
 
   cli(); // HOLD interrupts while new interrupts are set.
   
@@ -161,14 +161,8 @@ void setup() {
   data_ch4.reset = PK_RST4;
 
 
+  delay(180000); // Allows TOMCAT to boot and start data collection before sending data.
 
-
-
-  delay(120000); // Allows TOMCAT to boot and start data collection before sending data.
-  
-  
-  
-  
   
   // Start RTC and send System Start Time to FIFO
   Wire.begin(DS3231);   // Initializes RTC 
@@ -236,11 +230,10 @@ void loop() {
     
     data_ch1 = get_data(data_ch1);
     checksum = calculate_checksum(data_ch1.send_channel, ticStamp, uSecStamp, data_ch1.peak_val, data_ch1.tempRaw);        
-    //send_data(startByte, data_ch1.send_channel, ticStamp, uSecStamp, data_ch1.peak_val, data_ch1.tempRaw, checksum);
     send_data(&data_ch1, checksum);
     
     //debugging print statements in function below
-    print_debug(data_ch1, "1", ticStamp, uSecStamp, checksum);
+    //print_debug(data_ch1, "1", ticStamp, uSecStamp, checksum);
 
     // Reset peak value and interrupt flag for CH1
     newEventCH1 = false;
@@ -255,7 +248,6 @@ void loop() {
     
     data_ch2 = get_data(data_ch2);
     checksum = calculate_checksum(data_ch2.send_channel, ticStamp, uSecStamp, data_ch2.peak_val, data_ch2.tempRaw);
-    //send_data(startByte, data_ch2.send_channel, ticStamp, uSecStamp, data_ch2.peak_val, data_ch2.tempRaw, checksum);
     send_data(&data_ch2, checksum);
     
     //debugging print statements in function below
@@ -274,7 +266,6 @@ void loop() {
     
     data_ch3 = get_data(data_ch3);
     checksum = calculate_checksum(data_ch3.send_channel, ticStamp, uSecStamp, data_ch3.peak_val, data_ch3.tempRaw);
-//    send_data(startByte, data_ch3.send_channel, ticStamp, uSecStamp, data_ch3.peak_val, data_ch3.tempRaw, checksum);    
     send_data(&data_ch3, checksum);
     
     //debugging print statements in function below
@@ -293,10 +284,10 @@ void loop() {
     
     data_ch4 = get_data(data_ch4);
     checksum = calculate_checksum(data_ch4.send_channel, ticStamp, uSecStamp, data_ch4 .peak_val, data_ch4.tempRaw);    
-//    send_data(startByte, data_ch4.send_channel, ticStamp, uSecStamp, data_ch4.peak_val, data_ch4.tempRaw, checksum);
     send_data(&data_ch4, checksum);
+
     //debugging print statements in function below
-    print_debug(data_ch4, "4", ticStamp, uSecStamp, checksum);
+    //print_debug(data_ch4, "4", ticStamp, uSecStamp, checksum);
 
     // Reset peak value and interrupt flag for CH4
     newEventCH4 = false;
