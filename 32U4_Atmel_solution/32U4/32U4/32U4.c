@@ -12,12 +12,13 @@
 #define IRQ_HIGH_DISABLE 0B00110001
 #define IOCHRDY 0B00010000
 
-extern void BALE_HANDLER_vect(void);
 
 ISR(INT1_vect){//HF
 	PORTF = IRQ_LOW_ENABLE;  //Pulling IRQ low and opening buffer because tomcat holds irqs high by default even though they're active high
 	PORTF = IRQ_HIGH_ENABLE;
 	PORTF = IRQ_HIGH_DISABLE; // we have to leave the irq high because it's high by default and if we lower it it will go high when the buffer is tristated, causing a false interrupt
+    flag = 1;       // telling main to start counting to determine if irq is rejected by tomcat
+    irq_rejected = 0;
 }
 
 
@@ -39,7 +40,8 @@ void init(){
 	
 	RESERVED = 0B00000000;
 	SREG_SAVE = 0B00000000;
-
+    flag = 0;
+    irq_rejected = 0;
 
 	// delay 2 minutes
 	for(i = 0; i < 1600000000; i++){
@@ -51,7 +53,16 @@ void init(){
 int main(){
 
 	init();
-	while(1){}
-
-
+	while(1){
+        
+        if (flag){
+            irq_rejected++;
+            if (irq_rejected == NORMAL_TOMCAT_IRQ_RESPONSE){ // resending IRQ to tomcat
+                PORTF = IRQ_LOW_ENABLE;
+                PORTF = IRQ_HIGH_ENABLE;
+                PORTF = IRQ_HIGH_DISABLE;
+                irq_rejected = 0;
+            }
+        }
+    }
 }

@@ -214,6 +214,8 @@ void setup() {
     byte Hours           = Wire.read();
     start_time =  Minutes<<8 | init_time2;
     
+    
+    
     send_start_time(Hours, start_time, start_usec_offset);
   
   
@@ -345,7 +347,7 @@ ADC_data get_data(ADC_data data) {
 unsigned int calculate_checksum(byte channel, unsigned int ticStamp,
               unsigned long uSecStamp, uint16_t peak, uint16_t tempRaw){
 
-  unsigned int checksum = 0;
+  checksum = 0;
   checksum += channel;
   checksum += ticStamp & 0xFF;
   checksum += (ticStamp & 0xFF00) >> 8;
