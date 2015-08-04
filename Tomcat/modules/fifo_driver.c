@@ -24,7 +24,7 @@ MODULE_LICENSE("GPL");
 #define IRQ_NUM 5
 #define CLASS_NAME "Photon_Fifo"
 #define DEVICE_NAME "FIFO_DEV"
-#define BUFMAX 500
+#define BUFMAX 504
 
 static unsigned char* fifo_buffer;
 unsigned short port_start = 0x800;
@@ -34,7 +34,6 @@ static struct device* fifo_device;
 static int open_count = 0;
 wait_queue_head_t wq;
 static int interrupt_flag;
-static int int_pending_count;
 
 //function declarations
 
@@ -49,11 +48,6 @@ static struct file_operations fifo_fops = {
     .read = fifo_read,
     .release = fifo_close,
 };
-
-
-
-
-
 
 /* Module Initialization */
 static int __init fifo_init(void)
@@ -140,10 +134,8 @@ static int fifo_open(struct inode* inode, struct file* filp)
 		printk("<1> REQUEST_IRQ SUCCESS: returned 0\n");
 	}
 
-	fifo_buffer = kmalloc(BUFMAX*4 + 1, GFP_KERNEL);
-//	filp->private_data = &int_pending_count;
+	fifo_buffer = kmalloc(BUFMAX, GFP_KERNEL);
 	interrupt_flag = 0;
-	int_pending_count = 0;
     open_count++;
     return 0;
 }
@@ -151,35 +143,35 @@ static int fifo_open(struct inode* inode, struct file* filp)
 
 irq_handler_t handler(int irq, void* dev_id, struct pt_regs *regs)
 {
-    int i;
-	struct timeval start, end;
-	do_gettimeofday(&start);
+	int i;
+//	struct timeval start, end;
+//	do_gettimeofday(&start);
 
-	int_pending_count++;
+/*	int_pending_count++;
 
 	if (int_pending_count > 4)//fifo_buffer is already full
 	{
 		printk("<1> int_pending_count = %d, not reading port\n", int_pending_count);
 		return (irq_handler_t) - 1;
 	}
-/*
+
     for (i = (int_pending_count - 1)*BUFMAX; i < int_pending_count*BUFMAX; i++)
 	{
         fifo_buffer[i] = inb(port_start + (i % BUFMAX) );
     }
+
 */
-/*
 	for(i = 0; i < BUFMAX; i++)
 	{
-		fifo_buffer[i] = inb(port_start + i);
+		fifo_buffer[i] = inb(port_start);
 	}
-*/
+
     // or can you insb as below
-    insb(port_start, fifo_buffer, BUFMAX);
+//    insb(port_start, fifo_buffer, BUFMAX);
 	interrupt_flag = 1;
-    wake_up_interruptible(&wq);
-	do_gettimeofday(&end);
-	printk("<1> Time elapsed during interrupt handler = %lu\n", (end.tv_usec - start.tv_usec) );
+        wake_up_interruptible(&wq);
+//	do_gettimeofday(&end);
+//	printk("<1> Time elapsed during interrupt handler = %lu\n", (end.tv_usec - start.tv_usec) );
 //	printk("<1> handler start = %lu \n ", start.tv_usec);
 //	printk("<1> handler end = %lu \n", end.tv_usec);
 	return 0;
@@ -196,15 +188,16 @@ static ssize_t fifo_read(struct file* filp, char __user* buf, size_t count, loff
 	wait_event_interruptible(wq, interrupt_flag != 0);//need to confirm that the call blocks here because it was falling right through before
 	//should wake up immediately if an interrupt came in before read call
 	interrupt_flag = 0;
-	not_copied = copy_to_user(buf, fifo_buffer, int_pending_count*BUFMAX); // once it wakes up and executes this, fifo_buffer should be filled by handler
-//	not_copied = copy_to_user(buf, fifo_buffer, BUFMAX);
+//	not_copied = copy_to_user(buf, fifo_buffer, int_pending_count*BUFMAX); // once it wakes up and executes this, fifo_buffer should be filled by handler
+	not_copied = copy_to_user(buf, fifo_buffer, BUFMAX);
 
+/*
 	if (int_pending_count > 1){
 		printk("<1> From read: int_pending_count = %d\n", int_pending_count);
 	}
 
 	int_pending_count = 0;
-
+*/
 	if (not_copied != 0){
 	    printk("<1> copy_to_user returned %d\n", not_copied);
 	}
@@ -221,7 +214,7 @@ static int fifo_close(struct inode* inode, struct file* filp)
     if (open_count == 0)
     {
         free_irq(IRQ_NUM, NULL);
-		kfree(fifo_buffer);
+	kfree(fifo_buffer);
     	return open_count;
     }
 
