@@ -467,20 +467,12 @@ void print_debug(ADC_data data, char* channel_char, unsigned long ticStamp, unsi
     uint16_t peak_val = data.peak_val;
     uint16_t tempRaw = data.tempRaw;
 
-/*
-byte startByte, byte channel, unsigned int ticStamp, unsigned long uSecStamp, uint16_t peak, uint16_t tempRaw, uint16_t checksum
- */
-
-
     Serial.print("FF");Serial.print(channel_char); Serial.print(", ");
-    Serial.print(ticStamp,HEX); Serial.print(" ");
-    Serial.print(uSecStamp,HEX); Serial.print(" ");
+    Serial.print(ticStamp,HEX); Serial.print(".");
+    Serial.print(uSecStamp,HEX); Serial.print(", ");
     Serial.print(peak_val,HEX); Serial.print(", ");
     Serial.print(tempRaw,HEX); Serial.print(", ");
-    Serial.print(checksum,HEX); Serial.print(",");
-    
-    
-    Serial.print("Raw rtc Time:");
+    Serial.print(checksum,HEX); Serial.print(", ");
     RTC_PRINT_TIME();
     Serial.println();
 }
