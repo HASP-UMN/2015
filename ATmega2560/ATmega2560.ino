@@ -96,10 +96,10 @@ void setup() {
   SPI.setBitOrder(MSBFIRST);            // Most-significant bit first
   SPI.setDataMode(SPI_MODE0);           // Clock Polarity = 0; clock phase = 0
   
-  // Open serial port
-  Serial.begin(115200); Serial.flush();
-  //Serial.println("Channel, PeakVal, TempRaw, Seconds, uSeconds, rtcTime");
-  //Serial.println("=====================================================");
+//  // Open serial port
+//  Serial.begin(115200); Serial.flush();
+//  Serial.println("Channel, PeakVal, TempRaw, Seconds, uSeconds, rtcTime");
+//  Serial.println("=====================================================");
 
   cli(); // HOLD interrupts while new interrupts are set.
   
