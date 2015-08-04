@@ -32,7 +32,6 @@
 //#define ADC_CS_ASSERT 0B00000011
 //#define ADC_CS_DEASSERT 0B01000011
 
-
 #define FIFO_RST 0B00000010
 #define FIFO_WR  0B00000001
 #define FIFO_WR_ASSERT 0B01000010   //see PORTH on eagle file: FIFO_WR active low
@@ -61,7 +60,6 @@ ADC_data data_ch4;
 // FIFO interrupt service routine for the FF signal
 void FIFO_FF_ISR() {
   FIFO_full_flag = true;
-
 }
 
 // Ch[1-4] interrupt service routines for threshhold discriminator signals
@@ -85,12 +83,11 @@ ISR(INT4_vect) {
     newEventCH4 = true;
   // Ignore new events if another event (on any channel) is currently being processed
 }
-
 // Interrupt Service Routines for GPS_PPS
 ISR(INT3_vect) {
   uSecOffset = micros(); 
   ticCount++;
-  }  
+}  
 
 void setup() {  
   // Initialize and configure SPI bus for A/D communications
@@ -168,7 +165,6 @@ void setup() {
 
 
   delay(120000); // Allows TOMCAT to boot and start data collection before sending data.
-  //delay(5000);
   
   
   
@@ -215,15 +211,13 @@ void setup() {
     start_time =  Minutes<<8 | init_time2;
     
     
-    
+    // Sends initialization and time zero packet to the TOMCAT;    
     send_start_time(Hours, start_time, start_usec_offset);
   
-  
-  
-    // Debugging print statements below.
-    Serial.print("TIMEPACKET,         "); Serial.print(Hours,BIN); Serial.print(start_time,BIN); Serial.print(", "); Serial.println(start_usec_offset,BIN);
-    Serial.print("TIMEPACKET DECODED, "); Serial.print(Hours,HEX); Serial.print(start_time,HEX); Serial.print(", "); Serial.println(start_usec_offset,HEX);
-    Serial.print("TIMEPACKET DECODED, "); Serial.print(Hours,DEC); Serial.print(start_time,DEC); Serial.print(", "); Serial.println(start_usec_offset,DEC);
+//    // Debugging print statements below.
+//    Serial.print("TIMEPACKET,         "); Serial.print(Hours,BIN); Serial.print(start_time,BIN); Serial.print(", "); Serial.println(start_usec_offset,BIN);
+//    Serial.print("TIMEPACKET DECODED, "); Serial.print(Hours,HEX); Serial.print(start_time,HEX); Serial.print(", "); Serial.println(start_usec_offset,HEX);
+//    Serial.print("TIMEPACKET DECODED, "); Serial.print(Hours,DEC); Serial.print(start_time,DEC); Serial.print(", "); Serial.println(start_usec_offset,DEC);
 
 } // end SETUP
 
