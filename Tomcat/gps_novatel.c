@@ -34,7 +34,7 @@
 
 
 #define GPS_PORT           "/dev/ttyUSB1"            // TTY to OEMStar GPS (Port for second USB port)
-#define GPS_DATAFILE       "GPS_OEMSTAR.raw"         // Path to file where OEMStar GPS data will be recorded
+#define GPS_DATAFILE       "data/GPS/GPS_OEMSTAR.raw"         // Path to file where OEMStar GPS data will be recorded
 #define CRC32_POLYNOMIAL   0xEDB88320L
 #define VALID_POS_OVERRIDE 1
 

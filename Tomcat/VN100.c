@@ -24,8 +24,8 @@
 #include "VN100.h"
 
 // VN100 I/O
-#define IMU_PORT "/dev/ttyUSB0"                // TTY PORT TO VN100 (SET UP BY ftdi_sio KERNEL DRIVER)
-#define IMU_DATAFILE "IMU_VN100.txt"           // Path to file where VN100 IMU date will be recorded
+#define IMU_PORT "/dev/ttyUSB0"                     // TTY PORT TO VN100 (SET UP BY ftdi_sio KERNEL DRIVER)
+#define IMU_DATAFILE "data/IMU/IMU_VN100.txt"       // Path to file where VN100 IMU date will be recorded
 
 // VN100 Commands: Baud Rates
 unsigned char vn100_B115200[] = "$VNWRG,5,115200*60\n";
