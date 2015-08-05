@@ -215,10 +215,10 @@ void read_GPS(struct gps *gpsData_ptr)
 			}
 
 
-			gpsData_ptr->timeStatus = *((uint8_t *)(&response[13]));
+			gpsData_ptr->timeStatus = *((uint8_t *)(&response[13 + pCount]));
 			//printf("GPS - Time Status: %d\n",gpsData_ptr->timeStatus);  // For Debugging
-			gpsData_ptr->weekRef = *((uint16_t *)(&response[14]));
-			gpsData_ptr->time = *((long *)(&response[16]));
+			gpsData_ptr->weekRef = *((uint16_t *)(&response[14 + pCount]));
+			gpsData_ptr->time = *((long *)(&response[16 + pCount]));
 
 
 			// Set system time from GPS if it is good
@@ -299,9 +299,9 @@ void read_GPS(struct gps *gpsData_ptr)
 			}
 
 
-			gpsData_ptr->Xe = *((double *)(&response[36]));
-			gpsData_ptr->Ye = *((double *)(&response[44]));
-			gpsData_ptr->Ze = *((double *)(&response[52]));
+			gpsData_ptr->Xe = *((double *)(&response[36 + pCount]));
+			gpsData_ptr->Ye = *((double *)(&response[44 + pCount]));
+			gpsData_ptr->Ze = *((double *)(&response[52 + pCount]));
 
             // Write to GPS data file
             GPSDataFile = fopen(GPS_DATAFILE,"a");
