@@ -98,10 +98,12 @@ void get_channel_counts(struct photons *photonData){
     size_t bytesToRead;
     unsigned char channel;
 
+
    // photonData->counts_ch01 = 0;
    // photonData->counts_ch02 = 0;
    // photonData->counts_ch03 = 0;
    // photonData->counts_ch04 = 0;
+
 
     if(ioctl(fdTelemetryPipe, FIONREAD, &bytesToRead) < 0){
         reportError(ERR_TEL_PIPEBYTES);
