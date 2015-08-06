@@ -13,7 +13,7 @@
 
 void init_GPS(struct gps *gpsData_ptr);
 void read_GPS(struct gps *gpsData_ptr);
-bool GetBitMask(unsigned char *bits, int startingByte, uint8_t bitMask);
+int GetBitMask(unsigned char *bits, int startingByte, uint8_t bitMask);
 unsigned int CRC32Value(int i);
 unsigned int CalculateBlockCRC32(unsigned int ulCount, unsigned char *ucBuffer);
 

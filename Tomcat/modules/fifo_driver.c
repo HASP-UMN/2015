@@ -39,17 +39,14 @@ static int interrupt_flag;
 
 static int fifo_open(struct inode* inode, struct file* filp);
 static ssize_t fifo_read(struct file*, char*, size_t, loff_t *);
-static void fifo_write(struct file*, char*, size_t, loff_t* );
 irq_handler_t handler(int irq, void* dev_id, struct pt_regs *regs);
 static int fifo_close(struct inode* inode, struct file* filp);
 static void __exit fifo_exit(void);
-
 
 static struct file_operations fifo_fops = {
     .open = fifo_open,
     .read = fifo_read,
     .release = fifo_close,
-    .write = fifo_write,
 };
 
 /* Module Initialization */
@@ -150,7 +147,20 @@ irq_handler_t handler(int irq, void* dev_id, struct pt_regs *regs)
 //	struct timeval start, end;
 //	do_gettimeofday(&start);
 
+/*	int_pending_count++;
 
+	if (int_pending_count > 4)//fifo_buffer is already full
+	{
+		printk("<1> int_pending_count = %d, not reading port\n", int_pending_count);
+		return (irq_handler_t) - 1;
+	}
+
+    for (i = (int_pending_count - 1)*BUFMAX; i < int_pending_count*BUFMAX; i++)
+	{
+        fifo_buffer[i] = inb(port_start + (i % BUFMAX) );
+    }
+
+*/
 	for(i = 0; i < BUFMAX; i++)
 	{
 		fifo_buffer[i] = inb(port_start);
@@ -159,7 +169,7 @@ irq_handler_t handler(int irq, void* dev_id, struct pt_regs *regs)
     // or can you insb as below
 //    insb(port_start, fifo_buffer, BUFMAX);
 	interrupt_flag = 1;
-    wake_up_interruptible(&wq);
+        wake_up_interruptible(&wq);
 //	do_gettimeofday(&end);
 //	printk("<1> Time elapsed during interrupt handler = %lu\n", (end.tv_usec - start.tv_usec) );
 //	printk("<1> handler start = %lu \n ", start.tv_usec);
@@ -174,28 +184,27 @@ static ssize_t fifo_read(struct file* filp, char __user* buf, size_t count, loff
 	Also, __user* buf needs to be at least as big as fifo_buf, so probably 4*BUFMAX */
 
 	ssize_t not_copied;
-	wait_event_interruptible(wq, interrupt_flag != 0);
+//	printk("<1> In read(), before calling wait(), interrupt_flag = %d\n", interrupt_flag);
+	wait_event_interruptible(wq, interrupt_flag != 0);//need to confirm that the call blocks here because it was falling right through before
+	//should wake up immediately if an interrupt came in before read call
 	interrupt_flag = 0;
+//	not_copied = copy_to_user(buf, fifo_buffer, int_pending_count*BUFMAX); // once it wakes up and executes this, fifo_buffer should be filled by handler
 	not_copied = copy_to_user(buf, fifo_buffer, BUFMAX);
 
+/*
+	if (int_pending_count > 1){
+		printk("<1> From read: int_pending_count = %d\n", int_pending_count);
+	}
+
+	int_pending_count = 0;
+*/
 	if (not_copied != 0){
 	    printk("<1> copy_to_user returned %d\n", not_copied);
 	}
-    
+
     return (ssize_t)count - not_copied;
 }
 
-static ssize_t fifo_close(struct file* fp, const char __user* buf, size_t len, loff_t* off )
-{
-    if (buf[1] == DISABLE){
-        disable_irq(IRQ_NUM);
-    }
-    if (buf[1] == ENABLE){
-        enable_irq(IRQ_NUM);
-    }
-    
-    return 0;
-}
 
 
 static int fifo_close(struct inode* inode, struct file* filp)

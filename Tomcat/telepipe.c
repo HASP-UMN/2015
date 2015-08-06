@@ -14,12 +14,14 @@
 #include "telepipe.h"
 
 
-int fdTelemetryPipe;
+static int fdTelemetryPipe;
 
 
 void recordChannel(unsigned char channel){
+    fprintf(stderr, "Start record channel\n");
     if(fdTelemetryPipe > -1){
-        write(fdTelemetryPipe, &channel, 2);
+        fprintf(stderr, "Write record channel\n");
+        write(fdTelemetryPipe, &channel, 1);
     }
     else{
         fprintf(stderr,"############  TELEMETRY PIPE NOT OPEN  #############\n");  // For Debugging
@@ -30,6 +32,12 @@ void recordChannel(unsigned char channel){
 
 void init_telemetryPipe(){
     fdTelemetryPipe = open(TELEMETRY_FIFO, O_WRONLY);
+    if(fdTelemetryPipe < 0){
+        fprintf(stderr,"TELEMETRY PIPE failed to open\n");
+    }
+    else{
+        fprintf(stderr,"TELEMETRY PIPE openned successfully.\n");
+    }
     return;
 }
 

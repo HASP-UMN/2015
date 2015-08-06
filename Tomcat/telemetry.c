@@ -98,10 +98,10 @@ void get_channel_counts(struct photons *photonData){
     size_t bytesToRead;
     unsigned char channel;
 
-    photonData->counts_ch01 = 0;
-    photonData->counts_ch02 = 0;
-    photonData->counts_ch03 = 0;
-    photonData->counts_ch04 = 0;
+   // photonData->counts_ch01 = 0;
+   // photonData->counts_ch02 = 0;
+   // photonData->counts_ch03 = 0;
+   // photonData->counts_ch04 = 0;
 
     if(ioctl(fdTelemetryPipe, FIONREAD, &bytesToRead) < 0){
         reportError(ERR_TEL_PIPEBYTES);
@@ -114,21 +114,38 @@ void get_channel_counts(struct photons *photonData){
             return;
         }
 
-        switch(channel){
-        case 1:
+//        switch(channel){
+//        case 1:
+//            photonData->counts_ch01 = photonData->counts_ch01 + 1;
+//        case 2:
+//            photonData->counts_ch02 = photonData->counts_ch02 + 1;
+//        case 3:
+//            photonData->counts_ch03 = photonData->counts_ch03 + 1;
+//        case 4:
+//            photonData->counts_ch04 = photonData->counts_ch04 + 1;
+//        }
+
+        if(channel == (unsigned char) 1){
             photonData->counts_ch01 = photonData->counts_ch01 + 1;
-        case 2:
+        }
+        else if(channel== (unsigned char) 2){
             photonData->counts_ch02 = photonData->counts_ch02 + 1;
-        case 3:
+        }
+        else if(channel== (unsigned char) 3){
             photonData->counts_ch03 = photonData->counts_ch03 + 1;
-        case 4:
+        }
+        else if(channel== (unsigned char) 4){
             photonData->counts_ch04 = photonData->counts_ch04 + 1;
+        }
+        else{
+            fprintf(stderr,"TELEMETRY - Invalid channel: %uc\n", channel);
         }
 
         if(ioctl(fdTelemetryPipe, FIONREAD, &bytesToRead) < 0){
             reportError(ERR_TEL_PIPEBYTES);
             return;
         }
+
     }
 
     return;

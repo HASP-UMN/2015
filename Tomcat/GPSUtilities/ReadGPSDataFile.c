@@ -11,7 +11,7 @@
 #include <stdbool.h>
 #include <string.h>
 
-#define GPS_DATAFILE "../GPS_OEMSTAR.raw"
+#define GPS_DATAFILE "../data/GPS/GPS_OEMSTAR.raw"
 
 const char *getTimeStatus(unsigned char TimeStatus){
     switch(TimeStatus){

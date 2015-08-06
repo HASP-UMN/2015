@@ -24,8 +24,8 @@
 #include "VN100.h"
 
 // VN100 I/O
-#define IMU_PORT "/dev/ttyUSB0"                     // TTY PORT TO VN100 (SET UP BY ftdi_sio KERNEL DRIVER)
-#define IMU_DATAFILE "data/IMU/IMU_VN100.txt"       // Path to file where VN100 IMU date will be recorded
+#define IMU_PORT "/dev/ttyUSB0"                // TTY PORT TO VN100 (SET UP BY ftdi_sio KERNEL DRIVER)
+#define IMU_DATAFILE "data/IMU/IMU_VN100.txt"           // Path to file where VN100 IMU date will be recorded
 
 // VN100 Commands: Baud Rates
 unsigned char vn100_B115200[] = "$VNWRG,5,115200*60\n";
@@ -39,7 +39,7 @@ unsigned char readCalibratedData[] = "$VNRRG,54*72\n";
 // Timing
 struct timeval spec;
 long stime;
-long mtime;
+long millitime;
 
 // Checksum
 unsigned char Checksum;
@@ -54,7 +54,7 @@ void send_read_command(struct imu* imuData_ptr){
     // Get time that VN100 makes a measurement
     gettimeofday(&spec, NULL);
     stime = spec.tv_sec;
-    mtime = spec.tv_usec/1000;
+    millitime = spec.tv_usec/1000;
 
     return;
 }
@@ -153,7 +153,7 @@ void read_vn100(struct imu* imuData_ptr){
         return;
 	}//endif
 
-	fprintf(stderr,"IMU - Bytes To Read: %d\n",bytesToRead);  // For Debugging
+	//fprintf(stderr,"IMU - Bytes To Read: %d\n",bytesToRead);  // For Debugging
 
     // Reponses from the VN100 IMU should contain 115 or 131 bytes. If there are
     // a different number of bytes in the response, it is invalid.
@@ -179,7 +179,7 @@ void read_vn100(struct imu* imuData_ptr){
     }//endif
 
     // Adds timestamp
-    sprintf(imuData_ptr->dataBuffer + 113, ",T%d.%03d", stime, mtime);
+    sprintf(imuData_ptr->dataBuffer + 113, ",T%d.%03d", stime, millitime);
     imuData_ptr->dataBuffer[129] = '\n';
 
     // Writes the data to the IMU structure

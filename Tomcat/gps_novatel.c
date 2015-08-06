@@ -128,7 +128,7 @@ unsigned int CalculateBlockCRC32(unsigned int ulCount, unsigned char *ucBuffer)
 
 // Gets a specific bit from a set of bytes.
 // Used for reading the Receiver Status Mask.
-bool GetBitMask(unsigned char *bits, int startingByte, uint8_t bitMask)
+int GetBitMask(unsigned char *bits, int startingByte, uint8_t bitMask)
 {
     while(bitMask > 7)
     {
@@ -146,7 +146,7 @@ void read_GPS(struct gps *gpsData_ptr)
 
 	int pCount=0;
 	int bytesInGPSBuffer;
-	bool posValid = false;
+	int posValid = 0;
 
 	unsigned long CRC_computed;
 	unsigned long CRC_read;
@@ -226,7 +226,12 @@ void read_GPS(struct gps *gpsData_ptr)
 			{
 				time_t unixSeconds = 315964800 + (24*7*3600*gpsData_ptr->weekRef + gpsData_ptr->time/1000);
 				time_t *timeSeconds = &unixSeconds;
-				stime(timeSeconds);
+	//			fprintf(stderr, "unixseconds val = %u, timeseconds pointer = %x\n", unixSeconds, timeSeconds);
+				struct timeval tv;
+				tv.tv_sec = unixSeconds;
+				tv.tv_usec = 0;
+				settimeofday(&tv, NULL);
+				//stime(&time_debug);
 			}
 			else{
                 reportError(ERR_GPS_TIME);
