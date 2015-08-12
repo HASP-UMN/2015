@@ -12,6 +12,7 @@
 #include <string.h>
 
 #define GPS_DATAFILE "../GPS_OEMSTAR.raw"
+#define GPS_OUTFILE "../GPS_OUT.txt"
 
 const char *getTimeStatus(unsigned char TimeStatus){
     switch(TimeStatus){
@@ -168,7 +169,8 @@ int main(){
     int packetsRead = 0;
     int elementsRead = 0;
 
-    FILE *fp;
+    FILE *fp, *out_handle;
+    
     //char c[] = "this is tutorialspoint";
     unsigned char buffer[144];
 
@@ -197,8 +199,9 @@ int main(){
 
 
     fp = fopen(GPS_DATAFILE, "r");
+    out_handle = fopen (GPS_OUTFILE, "w+");
 
-    fprintf(stderr,"\n============== GPS Data File for NovAtel OEMStar BESTXYZB Log ==============\n",packetsRead);
+    fprintf(out_handle,"\n============== GPS Data File for NovAtel OEMStar BESTXYZB Log ==============\n",packetsRead);
 
     while(readNext==true){
 
@@ -229,40 +232,40 @@ int main(){
             NumSVs = *((unsigned char *)(&buffer[132]));
             SolSVs = *((unsigned char *)(&buffer[133]));
 
-            fprintf(stderr,"========================== GPS Data File Packet %d ==========================\n",packetsRead);
-            fprintf(stderr,"HEAD Time Status..........(13): %s\n",getTimeStatus(TimeStatus));
-            fprintf(stderr,"HEAD GPS Week.............(14): %d\n",GPSWeek);
-            fprintf(stderr,"HEAD GPS Milliseconds.....(16): %d\n",GPSMS);
-            fprintf(stderr,"RSM  Error Flag Raised....(20): %d\n",GetBitMask(buffer,20,0));
-            fprintf(stderr,"RSM  Temp Warning.........(20): %d\n",GetBitMask(buffer,20,1));
-            fprintf(stderr,"RSM  Volt Supply Warn.....(20): %d\n",GetBitMask(buffer,20,2));
-            fprintf(stderr,"RSM  Antenna Shorted......(21): %d\n",GetBitMask(buffer,20,6));
-            fprintf(stderr,"RSM  CPU Overloaded.......(21): %d\n",GetBitMask(buffer,20,7));
-            fprintf(stderr,"RSM  COM1 Buff Overrun....(21): %d\n",GetBitMask(buffer,20,8));
-            fprintf(stderr,"RSM  AGC Warning 1........(21): %d\n",GetBitMask(buffer,20,15));
-            fprintf(stderr,"RSM  AGC Warning 2........(21): %d\n",GetBitMask(buffer,20,17));
-            fprintf(stderr,"RSM  Almanac/UTC Inv......(21): %d\n",GetBitMask(buffer,20,18));
-            fprintf(stderr,"RSM  No Pos Sol...........(21): %d\n",GetBitMask(buffer,20,19));
-            fprintf(stderr,"RSM  Clock Model Inv......(21): %d\n",GetBitMask(buffer,20,22));
-            fprintf(stderr,"RSM  Soft Res Warning.....(22): %d\n",GetBitMask(buffer,20,24));
-            fprintf(stderr,"GPS  Pos Sol Status.......(28): %s\n",getSolStatus(PSolStatus));
-            fprintf(stderr,"GPS  Pos Type.............(32): %s\n",getSolType(PosType));
-            fprintf(stderr,"GPS  Pos-X................(36): %d\n",Px);
-            fprintf(stderr,"GPS  Pos-Y................(44): %d\n",Py);
-            fprintf(stderr,"GPS  Pos-Z................(52): %d\n",Pz);
-            fprintf(stderr,"GPS  Pos-X Std............(60): %d\n",PxStd);
-            fprintf(stderr,"GPS  Pos-Y Std............(64): %d\n",PyStd);
-            fprintf(stderr,"GPS  Pos-Z Std............(68): %d\n",PzStd);
-            fprintf(stderr,"GPS  Vel Sol Status.......(72): %s\n",getSolStatus(VSolStatus));
-            fprintf(stderr,"GPS  Vel Type.............(76): %s\n",getSolType(VelType));
-            fprintf(stderr,"GPS  Vel-X................(36): %d\n",Vx);
-            fprintf(stderr,"GPS  Vel-Y................(44): %d\n",Vy);
-            fprintf(stderr,"GPS  Vel-Z................(52): %d\n",Vz);
-            fprintf(stderr,"GPS  Vel-X Std............(60): %d\n",VxStd);
-            fprintf(stderr,"GPS  Vel-Y Std............(64): %d\n",VyStd);
-            fprintf(stderr,"GPS  Vel-Z Std............(68): %d\n",VzStd);
-            fprintf(stderr,"GPS  Num Sats Track......(132): %d\n",VzStd);
-            fprintf(stderr,"GPS  Num Sats Sol........(133): %d\n",VzStd);
+            fprintf(out_handle,"========================== GPS Data File Packet %d ==========================\n",packetsRead);
+            fprintf(out_handle,"HEAD Time Status..........(13): %s\n",getTimeStatus(TimeStatus));
+            fprintf(out_handle,"HEAD GPS Week.............(14): %d\n",GPSWeek);
+            fprintf(out_handle,"HEAD GPS Milliseconds.....(16): %d\n",GPSMS);
+            fprintf(out_handle,"RSM  Error Flag Raised....(20): %d\n",GetBitMask(buffer,20,0));
+            fprintf(out_handle,"RSM  Temp Warning.........(20): %d\n",GetBitMask(buffer,20,1));
+            fprintf(out_handle,"RSM  Volt Supply Warn.....(20): %d\n",GetBitMask(buffer,20,2));
+            fprintf(out_handle,"RSM  Antenna Shorted......(21): %d\n",GetBitMask(buffer,20,6));
+            fprintf(out_handle,"RSM  CPU Overloaded.......(21): %d\n",GetBitMask(buffer,20,7));
+            fprintf(out_handle,"RSM  COM1 Buff Overrun....(21): %d\n",GetBitMask(buffer,20,8));
+            fprintf(out_handle,"RSM  AGC Warning 1........(21): %d\n",GetBitMask(buffer,20,15));
+            fprintf(out_handle,"RSM  AGC Warning 2........(21): %d\n",GetBitMask(buffer,20,17));
+            fprintf(out_handle,"RSM  Almanac/UTC Inv......(21): %d\n",GetBitMask(buffer,20,18));
+            fprintf(out_handle,"RSM  No Pos Sol...........(21): %d\n",GetBitMask(buffer,20,19));
+            fprintf(out_handle,"RSM  Clock Model Inv......(21): %d\n",GetBitMask(buffer,20,22));
+            fprintf(out_handle,"RSM  Soft Res Warning.....(22): %d\n",GetBitMask(buffer,20,24));
+            fprintf(out_handle,"GPS  Pos Sol Status.......(28): %s\n",getSolStatus(PSolStatus));
+            fprintf(out_handle,"GPS  Pos Type.............(32): %s\n",getSolType(PosType));
+            fprintf(out_handle,"GPS  Pos-X................(36): %d\n",Px);
+            fprintf(out_handle,"GPS  Pos-Y................(44): %d\n",Py);
+            fprintf(out_handle,"GPS  Pos-Z................(52): %d\n",Pz);
+            fprintf(out_handle,"GPS  Pos-X Std............(60): %d\n",PxStd);
+            fprintf(out_handle,"GPS  Pos-Y Std............(64): %d\n",PyStd);
+            fprintf(out_handle,"GPS  Pos-Z Std............(68): %d\n",PzStd);
+            fprintf(out_handle,"GPS  Vel Sol Status.......(72): %s\n",getSolStatus(VSolStatus));
+            fprintf(out_handle,"GPS  Vel Type.............(76): %s\n",getSolType(VelType));
+            fprintf(out_handle,"GPS  Vel-X................(36): %d\n",Vx);
+            fprintf(out_handle,"GPS  Vel-Y................(44): %d\n",Vy);
+            fprintf(out_handle,"GPS  Vel-Z................(52): %d\n",Vz);
+            fprintf(out_handle,"GPS  Vel-X Std............(60): %d\n",VxStd);
+            fprintf(out_handle,"GPS  Vel-Y Std............(64): %d\n",VyStd);
+            fprintf(out_handle,"GPS  Vel-Z Std............(68): %d\n",VzStd);
+            fprintf(out_handle,"GPS  Num Sats Track......(132): %d\n",VzStd);
+            fprintf(out_handle,"GPS  Num Sats Sol........(133): %d\n",VzStd);
 
         }
         else{
@@ -275,11 +278,11 @@ int main(){
     fclose(fp);
 
     if(packetsRead>0){
-        fprintf(stderr,"=============================================================================\n",packetsRead);
+        fprintf(out_handle,"=============================================================================\n",packetsRead);
     }
 
-    fprintf(stderr,"Packets Read: %d\n",packetsRead);
-    fprintf(stderr,"=============================================================================\n\n",packetsRead);
+    fprintf(out_handle,"Packets Read: %d\n",packetsRead);
+    fprintf(out_handle,"=============================================================================\n\n",packetsRead);
 
     return 0;
 }
