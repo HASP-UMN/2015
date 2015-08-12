@@ -128,7 +128,7 @@ unsigned int CalculateBlockCRC32(unsigned int ulCount, unsigned char *ucBuffer)
 
 // Gets a specific bit from a set of bytes.
 // Used for reading the Receiver Status Mask.
-bool GetBitMask(unsigned char *bits, int startingByte, uint8_t bitMask)
+int GetBitMask(unsigned char *bits, int startingByte, uint8_t bitMask)
 {
     while(bitMask > 7)
     {
@@ -146,7 +146,7 @@ void read_GPS(struct gps *gpsData_ptr)
 
 	int pCount=0;
 	int bytesInGPSBuffer;
-	bool posValid = false;
+	int posValid = 0;
 
 	unsigned long CRC_computed;
 	unsigned long CRC_read;
@@ -215,10 +215,10 @@ void read_GPS(struct gps *gpsData_ptr)
 			}
 
 
-			gpsData_ptr->timeStatus = *((uint8_t *)(&response[13]));
+			gpsData_ptr->timeStatus = *((uint8_t *)(&response[13 + pCount]));
 			//printf("GPS - Time Status: %d\n",gpsData_ptr->timeStatus);  // For Debugging
-			gpsData_ptr->weekRef = *((uint16_t *)(&response[14]));
-			gpsData_ptr->time = *((long *)(&response[16]));
+			gpsData_ptr->weekRef = *((uint16_t *)(&response[14 + pCount]));
+			gpsData_ptr->time = *((long *)(&response[16 + pCount]));
 
 
 			// Set system time from GPS if it is good
@@ -226,7 +226,12 @@ void read_GPS(struct gps *gpsData_ptr)
 			{
 				time_t unixSeconds = 315964800 + (24*7*3600*gpsData_ptr->weekRef + gpsData_ptr->time/1000);
 				time_t *timeSeconds = &unixSeconds;
-				stime(timeSeconds);
+	//			fprintf(stderr, "unixseconds val = %u, timeseconds pointer = %x\n", unixSeconds, timeSeconds);
+				struct timeval tv;
+				tv.tv_sec = unixSeconds;
+				tv.tv_usec = 0;
+				settimeofday(&tv, NULL);
+				//stime(&time_debug);
 			}
 			else{
                 reportError(ERR_GPS_TIME);
@@ -299,9 +304,9 @@ void read_GPS(struct gps *gpsData_ptr)
 			}
 
 
-			gpsData_ptr->Xe = *((double *)(&response[36]));
-			gpsData_ptr->Ye = *((double *)(&response[44]));
-			gpsData_ptr->Ze = *((double *)(&response[52]));
+			gpsData_ptr->Xe = *((double *)(&response[36 + pCount]));
+			gpsData_ptr->Ye = *((double *)(&response[44 + pCount]));
+			gpsData_ptr->Ze = *((double *)(&response[52 + pCount]));
 
             // Write to GPS data file
             GPSDataFile = fopen(GPS_DATAFILE,"a");
