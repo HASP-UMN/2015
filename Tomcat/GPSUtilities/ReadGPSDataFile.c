@@ -3,8 +3,8 @@
 // This file reads from the data file of GPS data
 //     and prints it to the screen. Intended for
 //     testing the GPS.
-// Last Edited By: Luke Granlund
-// Last Edited On: 13 July 2015, 16:00
+// Last Edited By: Josiah DeLange
+// Last Edited On: 12 August 2015, 20:07
 
 #include <stdlib.h>
 #include <stdio.h>
