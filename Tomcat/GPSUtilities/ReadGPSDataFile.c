@@ -2,8 +2,8 @@
 // ReadGPSDataFile.c
 // This file reads from the data file of GPS data
 //     and prints it to the file GPSlist, and to the
-//     file GPStable.csv. Intended for testing the,
-//     but with Aug. 12 edit can also parse datafile.
+//     file GPStable.csv. Intended for testing the receiver,
+//     but with Aug. 12 edit can also parse data file.
 // Last Edited By: Josiah DeLange
 // Last Edited On: 12 August 2015, 20:07
 
