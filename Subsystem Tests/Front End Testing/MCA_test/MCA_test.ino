@@ -20,22 +20,6 @@
 #define IRQ_CH3 4    // Arduino Mega 2560 interrupt 4 (pin 19)
 #define IRQ_CH4 5    // Arduino Mega 2560 interrupt 5 (pin 18)
 
-/* DATA OUTPUT (NEED TO DETERMINE CORRECT PINS AND UPDATE)
-#define PF_0 A0
-#define PF_1 A1
-#define PF_2 A2
-#define PF_3 A3
-#define PF_4 A4
-#define PF_5 A5
-#define PF_6 A6
-#define PF_7 A7
-*/
-
-/* FIFO CONTROL (NEED TO DETERMINE CORRECT PINS AND UPDATE)
-#define FIFO_RST A8
-#define FIFO_WR A9
-#define FIFO_FF A10
-*/
 
 // Global variables
 const int ADCchipSelect = 53;        // Chip select for A/D converter
@@ -87,20 +71,7 @@ void setup() {
   pinMode(RESET_CH2, OUTPUT);
   pinMode(RESET_CH3, OUTPUT);
   pinMode(RESET_CH4, OUTPUT);
-  pinMode(PF_0, OUTPUT);
-  pinMode(PF_1, OUTPUT);
-  pinMode(PF_2, OUTPUT);
-  pinMode(PF_3, OUTPUT);
-  pinMode(PF_4, OUTPUT);
-  pinMode(PF_5, OUTPUT);
-  pinMode(PF_6, OUTPUT);
-  pinMode(PF_7, OUTPUT);
   
-  pinMode(FIFO_SRST OUTPUT);
-  pinMode(FIFO_WR, OUTPUT);
-  pinMode(FIFO_FF, OUTPUT);
-  
-  //digitalWrite(A0, HIGH);...?
   
   digitalWrite(ADCchipSelect, HIGH);
   digitalWrite(RESET_CH1, LOW);

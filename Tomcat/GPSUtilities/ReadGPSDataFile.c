@@ -14,7 +14,7 @@
 
 #define GPSlist "../GPSlist.txt"
 #define GPStable "../GPStable.csv"
-#define GPS_DATAFILE "../GPS_OEMSTAR.raw"
+#define GPS_DATAFILE "GPS_OEMSTAR.raw"
 
 const char *getTimeStatus(unsigned char TimeStatus){
     switch(TimeStatus){

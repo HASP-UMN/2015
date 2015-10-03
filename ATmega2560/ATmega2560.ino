@@ -233,7 +233,7 @@ void loop() {
     send_data(&data_ch1, checksum);
     
     //debugging print statements in function below
-    //print_debug(data_ch1, "1", ticStamp, uSecStamp, checksum);
+    print_debug(data_ch1, "1", ticStamp, uSecStamp, checksum);
 
     // Reset peak value and interrupt flag for CH1
     newEventCH1 = false;
@@ -251,7 +251,7 @@ void loop() {
     send_data(&data_ch2, checksum);
     
     //debugging print statements in function below
-    //print_debug(data_ch2, "2", ticStamp, uSecStamp, checksum);
+    print_debug(data_ch2, "2", ticStamp, uSecStamp, checksum);
     
     // Reset peak value and interrupt flag for CH2
     newEventCH2 = false;
@@ -269,7 +269,7 @@ void loop() {
     send_data(&data_ch3, checksum);
     
     //debugging print statements in function below
-    //print_debug(data_ch3, "3", ticStamp, uSecStamp, checksum);
+    print_debug(data_ch3, "3", ticStamp, uSecStamp, checksum);
     
     // Reset peak value and interrupt flag for CH3
     newEventCH3 = false;
@@ -287,7 +287,7 @@ void loop() {
     send_data(&data_ch4, checksum);
 
     //debugging print statements in function below
-    //print_debug(data_ch4, "4", ticStamp, uSecStamp, checksum);
+    print_debug(data_ch4, "4", ticStamp, uSecStamp, checksum);
 
     // Reset peak value and interrupt flag for CH4
     newEventCH4 = false;
@@ -456,7 +456,7 @@ void print_debug(ADC_data data, char* channel_char, unsigned long ticStamp, unsi
     uint16_t peak_val = data.peak_val;
     uint16_t tempRaw = data.tempRaw;
 
-    Serial.print("FF");Serial.print(channel_char); Serial.print(", ");
+    Serial.print(channel_char); Serial.print(", ");
     Serial.print(ticStamp,HEX); Serial.print(".");
     Serial.print(uSecStamp,HEX); Serial.print(", ");
     Serial.print(peak_val,HEX); Serial.print(", ");
